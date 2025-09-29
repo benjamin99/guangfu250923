@@ -4,9 +4,10 @@
 
 功能：
 1. 建立物資需求 (POST /requests)
-2. 取得需求清單 (GET /requests)
+2. 取得需求清單 (GET /requests) － 已支援分頁 (limit / offset) 與 JSON-LD Collection 包裝
 3. 物資配送登記 (POST /supplies/distribute)
-4. OpenAPI 規格檔 `openapi.yaml`
+4. 物資扁平清單 (GET /supplies) － 支援依 request_id 過濾 + 分頁
+5. OpenAPI 規格檔 `openapi.yaml`
 
 擴充欄位 (圖片下方列出的 API 欄位) 亦已納入：
 - code 站點名稱/代碼
@@ -47,6 +48,35 @@ go run ./cmd/server
 ## API 總覽
 詳見 `openapi.yaml`。重點：
 
+### 分頁與 JSON-LD Collection 格式
+目前 `GET /requests` 與 `GET /supplies` 回傳格式採用簡化 Hydra / JSON-LD Collection：
+
+```jsonc
+{
+  "@context": "https://www.w3.org/ns/hydra/context.jsonld",
+  "@type": "Collection",
+  "totalItems": 123,          // 總筆數
+  "member": [ /* 陣列資料 */ ],
+  "limit": 20,                // 本頁大小
+  "offset": 40,               // 從第幾筆開始 (0-based)
+  "next": "/requests?limit=20&offset=60",    // 若無後續頁面為 null
+  "previous": "/requests?limit=20&offset=20" // 若無前一頁為 null
+}
+```
+
+Query 參數：
+- limit: 每頁筆數 (requests: 預設 20, 最大 200；supplies: 預設 50, 最大 500)
+- offset: 起始偏移 (0 為第一頁)
+- status: (僅 /requests) 過濾需求狀態
+- request_id: (僅 /supplies) 過濾特定需求下物資
+
+範例：
+```
+GET /requests?limit=20&offset=0
+GET /requests?status=pending&limit=10&offset=30
+GET /supplies?request_id=<uuid>&limit=100
+```
+
 ### 建立需求
 POST /requests
 ```json
@@ -82,9 +112,19 @@ POST /requests
 ### 取得需求清單
 GET /requests
 
-回傳包含每個需求及其 supplies，`created_at` 為 Unix 秒。
+回傳包含每個需求及其 supplies，`created_at` 為 Unix 秒，外層使用 JSON-LD Collection 包裝 (見上)。
 
 可用 `status` query 過濾：`/requests?status=pending`。
+
+### 物資清單 (扁平)
+GET /supplies
+
+回傳所有物資 (不含需求主檔欄位)，支援：
+```
+GET /supplies?limit=50&offset=0
+GET /supplies?request_id=<需求UUID>&limit=100
+```
+回傳同樣套用 JSON-LD Collection。
 
 ### 物資配送
 POST /supplies/distribute
@@ -108,3 +148,4 @@ POST /supplies/distribute
 
 ---
 有需要再調整欄位或增加端點，歡迎提出！
+1153b88d8a795eb330a004b02c467861

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -21,6 +22,8 @@ func main() {
 	}
 	defer pool.Close()
 
+	slog.Info("database connected", "cfg", cfg.DBHost+":"+cfg.DBPort+"/"+cfg.DBName)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := db.Migrate(ctx, pool); err != nil {
@@ -34,6 +37,7 @@ func main() {
 	r.POST("/requests", h.CreateRequest)
 	r.GET("/requests", h.ListRequests)
 	r.POST("/supplies/distribute", h.DistributeSupplies)
+	r.GET("/supplies", h.ListSupplies)
 
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: r}
 	log.Printf("server listening on :%s", cfg.Port)

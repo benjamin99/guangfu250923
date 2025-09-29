@@ -23,15 +23,21 @@ paths:
             type: string
             enum: [pending, partial, fulfilled, closed]
           description: 過濾狀態
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+          description: 單頁筆數
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+          description: 起始偏移 (資料列位移)
       responses:
         '200':
           description: 成功
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Request'
+                $ref: '#/components/schemas/RequestCollection'
     post:
       summary: 新增物資需求
       requestBody:
@@ -69,8 +75,55 @@ paths:
                 items:
                   $ref: '#/components/schemas/SupplyItem'
         '400': { description: 無效或超過需求數量 }
+  /supplies:
+    get:
+      summary: 取得所有物資清單 (扁平) 分頁
+      parameters:
+        - in: query
+          name: request_id
+          schema: { type: string, format: uuid }
+          description: 過濾某一需求的物資
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyCollection'
 components:
   schemas:
+    CollectionBase:
+      type: object
+      properties:
+        '@context': { type: string, example: https://www.w3.org/ns/hydra/context.jsonld }
+        '@type': { type: string, example: Collection }
+        totalItems: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+        next: { type: string, nullable: true }
+        previous: { type: string, nullable: true }
+    RequestCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/Request' }
+    SupplyCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/SupplyItem' }
     CreateRequestInput:
       type: object
       required: [name]

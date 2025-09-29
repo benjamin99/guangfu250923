@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -107,13 +108,25 @@ func (h *Handler) CreateRequest(c *gin.Context) {
 
 func (h *Handler) ListRequests(c *gin.Context) {
 	status := c.Query("status")
+	limit := parsePositiveInt(c.Query("limit"), 20, 1, 200)
+	offset := parsePositiveInt(c.Query("offset"), 0, 0, 1000000)
 	ctx := context.Background()
+
+	// total count for pagination (optional performance cost)
+	var total int
+	if status != "" {
+		h.pool.QueryRow(ctx, `select count(*) from requests where status=$1`, status).Scan(&total)
+	} else {
+		h.pool.QueryRow(ctx, `select count(*) from requests`).Scan(&total)
+	}
+
+	baseSelect := `select id,code,name,address,phone,contact,status,needed_people,notes,lng,lat,map_link,extract(epoch from created_at)::bigint from requests`
 	var rows pgx.Rows
 	var err error
 	if status != "" {
-		rows, err = h.pool.Query(ctx, `select id,code,name,address,phone,contact,status,needed_people,notes,lng,lat,map_link,extract(epoch from created_at)::bigint from requests where status=$1 order by created_at desc`, status)
+		rows, err = h.pool.Query(ctx, baseSelect+` where status=$1 order by created_at desc limit $2 offset $3`, status, limit, offset)
 	} else {
-		rows, err = h.pool.Query(ctx, `select id,code,name,address,phone,contact,status,needed_people,notes,lng,lat,map_link,extract(epoch from created_at)::bigint from requests order by created_at desc`)
+		rows, err = h.pool.Query(ctx, baseSelect+` order by created_at desc limit $1 offset $2`, limit, offset)
 	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -124,14 +137,14 @@ func (h *Handler) ListRequests(c *gin.Context) {
 	reqs := []models.Request{}
 	for rows.Next() {
 		var r models.Request
-		err = rows.Scan(&r.ID, &r.Code, &r.Name, &r.Address, &r.Phone, &r.Contact, &r.Status, &r.NeededPeople, &r.Notes, &r.Lng, &r.Lat, &r.MapLink, &r.CreatedAt)
-		if err != nil {
+		if err = rows.Scan(&r.ID, &r.Code, &r.Name, &r.Address, &r.Phone, &r.Contact, &r.Status, &r.NeededPeople, &r.Notes, &r.Lng, &r.Lat, &r.MapLink, &r.CreatedAt); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		reqs = append(reqs, r)
 	}
-	// load supplies by request ids
+
+	// Eager load supplies for current page
 	if len(reqs) > 0 {
 		idSet := make(map[string]*models.Request, len(reqs))
 		ids := []any{}
@@ -139,7 +152,6 @@ func (h *Handler) ListRequests(c *gin.Context) {
 			idSet[reqs[i].ID] = &reqs[i]
 			ids = append(ids, reqs[i].ID)
 		}
-		// Build IN clause dynamically (small scale acceptable)
 		placeholders := ""
 		for i := range ids {
 			if i > 0 {
@@ -165,5 +177,118 @@ func (h *Handler) ListRequests(c *gin.Context) {
 			return
 		}
 	}
-	c.JSON(http.StatusOK, reqs)
+
+	// JSON-LD style collection wrapper
+	lastPage := int(math.Ceil(float64(total)/float64(limit))) - 1
+	if lastPage < 0 {
+		lastPage = 0
+	}
+	baseURL := c.Request.URL.Path
+	q := c.Request.URL.Query()
+	buildLink := func(off int) string {
+		q.Set("limit", strconv.Itoa(limit))
+		q.Set("offset", strconv.Itoa(off))
+		return baseURL + "?" + q.Encode()
+	}
+	var nextLink *string
+	if offset+limit < total {
+		s := buildLink(offset + limit)
+		nextLink = &s
+	}
+	var prevLink *string
+	if offset-limit >= 0 {
+		s := buildLink(offset - limit)
+		prevLink = &s
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"@context":   "https://www.w3.org/ns/hydra/context.jsonld",
+		"@type":      "Collection",
+		"totalItems": total,
+		"member":     reqs,
+		"limit":      limit,
+		"offset":     offset,
+		"next":       nextLink,
+		"previous":   prevLink,
+		"lastOffset": lastPage * limit,
+	})
+}
+
+func parsePositiveInt(raw string, def, min, max int) int {
+	if raw == "" {
+		return def
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		return def
+	}
+	if v < min {
+		return min
+	}
+	if v > max {
+		return max
+	}
+	return v
+}
+
+// ListSupplies provides a flat list across all supplies with pagination & optional request_id filter.
+func (h *Handler) ListSupplies(c *gin.Context) {
+	limit := parsePositiveInt(c.Query("limit"), 50, 1, 500)
+	offset := parsePositiveInt(c.Query("offset"), 0, 0, 1000000)
+	requestID := c.Query("request_id")
+	ctx := context.Background()
+	var total int
+	if requestID != "" {
+		h.pool.QueryRow(ctx, `select count(*) from supply_items where request_id=$1`, requestID).Scan(&total)
+	} else {
+		h.pool.QueryRow(ctx, `select count(*) from supply_items`).Scan(&total)
+	}
+	var rows pgx.Rows
+	var err error
+	if requestID != "" {
+		rows, err = h.pool.Query(ctx, `select id,request_id,tag,name,total_count,received_count,unit from supply_items where request_id=$1 order by created_at desc limit $2 offset $3`, requestID, limit, offset)
+	} else {
+		rows, err = h.pool.Query(ctx, `select id,request_id,tag,name,total_count,received_count,unit from supply_items order by created_at desc limit $1 offset $2`, limit, offset)
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+	list := []models.SupplyItem{}
+	for rows.Next() {
+		var s models.SupplyItem
+		if err = rows.Scan(&s.ID, &s.RequestID, &s.Tag, &s.Name, &s.TotalCount, &s.ReceivedCount, &s.Unit); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		list = append(list, s)
+	}
+	baseURL := c.Request.URL.Path
+	q := c.Request.URL.Query()
+	build := func(off int) string {
+		q.Set("limit", strconv.Itoa(limit))
+		q.Set("offset", strconv.Itoa(off))
+		return baseURL + "?" + q.Encode()
+	}
+	var nextLink *string
+	if offset+limit < total {
+		s := build(offset + limit)
+		nextLink = &s
+	}
+	var prevLink *string
+	if offset-limit >= 0 {
+		s := build(offset - limit)
+		prevLink = &s
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"@context":   "https://www.w3.org/ns/hydra/context.jsonld",
+		"@type":      "Collection",
+		"totalItems": total,
+		"member":     list,
+		"limit":      limit,
+		"offset":     offset,
+		"next":       nextLink,
+		"previous":   prevLink,
+	})
 }
