@@ -1,0 +1,140 @@
+openapi: 3.0.3
+info:
+  title: 災害物資需求 API
+  version: 0.1.0
+  description: |-
+    依據需求圖片實作的後端 API。提供建立物資需求、查詢需求清單、物資配送登記。
+servers:
+  - url: http://localhost:8080
+paths:
+  /healthz:
+    get:
+      summary: 健康檢查
+      responses:
+        '200':
+          description: OK
+  /requests:
+    get:
+      summary: 取得需求清單
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, partial, fulfilled, closed]
+          description: 過濾狀態
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
+    post:
+      summary: 新增物資需求
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRequestInput'
+      responses:
+        '201':
+          description: 建立成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400': { description: 輸入錯誤 }
+  /supplies/distribute:
+    post:
+      summary: 物資配送 (累加 received_count)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/DistributionInput'
+      responses:
+        '200':
+          description: 更新後的供應項目
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplyItem'
+        '400': { description: 無效或超過需求數量 }
+components:
+  schemas:
+    CreateRequestInput:
+      type: object
+      required: [name]
+      properties:
+        code: { type: string, description: 站點代碼/名稱 }
+        name: { type: string, description: 需救援的單位名字 }
+        address: { type: string }
+        phone: { type: string }
+        contact: { type: string }
+        status:
+          type: string
+          enum: [pending, partial, fulfilled, closed]
+          default: pending
+        needed_people: { type: integer, format: int32 }
+        notes: { type: string }
+        lng: { type: number, format: double }
+        lat: { type: number, format: double }
+        map_link: { type: string }
+        supplies:
+          description: 可為單一物件或陣列
+          oneOf:
+            - $ref: '#/components/schemas/SupplyItemCreate'
+            - type: array
+              items:
+                $ref: '#/components/schemas/SupplyItemCreate'
+    Request:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string }
+        contact: { type: string }
+        status: { type: string }
+        needed_people: { type: integer }
+        notes: { type: string }
+        lng: { type: number, format: double }
+        lat: { type: number, format: double }
+        map_link: { type: string }
+        created_at: { type: integer, format: int64, description: Unix timestamp (sec) }
+        supplies:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyItem'
+    SupplyItemCreate:
+      type: object
+      required: [name, total_count, unit]
+      properties:
+        tag: { type: string, description: 物資種類: food/medical/daily/equipment/other }
+        name: { type: string }
+        total_count: { type: integer }
+        received_count: { type: integer, default: 0 }
+        unit: { type: string }
+    SupplyItem:
+      allOf:
+        - $ref: '#/components/schemas/SupplyItemCreate'
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            request_id: { type: string, format: uuid }
+    DistributionInput:
+      type: object
+      required: [id, count]
+      properties:
+        id: { type: string, format: uuid }
+        count: { type: integer, minimum: 1 }
