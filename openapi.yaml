@@ -7,6 +7,8 @@ info:
 servers:
   - url: http://localhost:8080
     description: 本地開發
+  - url: https://guangfu250923.pttapp.cc
+    description: 線上服務 (Production)
   - url: '{protocol}://{host}:{port}'
     description: 自訂伺服器
     variables:
