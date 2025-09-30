@@ -61,10 +61,10 @@ func main() {
 
 	// Swagger UI with custom configuration
 	r.StaticFile("/openapi.yaml", "./openapi.yaml")
-	
+
 	url := ginSwagger.URL("/openapi.yaml")
 	defaultHost := ginSwagger.DefaultModelsExpandDepth(-1)
-	
+
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url, defaultHost))
 
 	// Sheet cache

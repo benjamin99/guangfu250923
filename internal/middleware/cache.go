@@ -17,7 +17,7 @@ import (
 // If the client sends If-None-Match matching the computed ETag, a 304 Not Modified is returned.
 func CacheHeaders(maxBody int) gin.HandlerFunc {
 	if maxBody <= 0 {
-		maxBody = 512 * 1024
+		maxBody = 512 * 1024 // 512KB buffer threshold
 	}
 	return func(c *gin.Context) {
 		if c.Request.Method != http.MethodGet {
@@ -27,21 +27,34 @@ func CacheHeaders(maxBody int) gin.HandlerFunc {
 		rw := &cacheRecorder{ResponseWriter: c.Writer, status: 200, limit: maxBody}
 		c.Writer = rw
 		c.Next()
-		// if handler already wrote a redirect or error, just flush as-is
+
+		// Non-200: just ensure buffered content flushed if we buffered
 		if rw.status != http.StatusOK {
-			// write through
-			writeBuffered(rw)
+			if !rw.streaming {
+				writeBuffered(rw)
+			}
 			return
 		}
+
+		// If we had to stream (body exceeded limit) we cannot safely set ETag after body start
+		if rw.streaming {
+			// We can still set a basic Cache-Control if absent
+			if rw.Header().Get("Cache-Control") == "" {
+				rw.Header().Set("Cache-Control", cacheControlForPath(c.FullPath(), c.Request.URL.RawQuery))
+			}
+			return
+		}
+
 		body := rw.buf.Bytes()
 		h := sha256.Sum256(body)
 		etag := "W/\"" + hex.EncodeToString(h[:8]) + "\""
 		hdr := rw.Header()
-		// Handle conditional
+
+		// Handle conditional If-None-Match
 		if inm := c.Request.Header.Get("If-None-Match"); inm != "" {
 			parts := strings.Split(inm, ",")
 			for _, p := range parts {
-				if strings.TrimSpace(p) == etag { // 304
+				if strings.TrimSpace(p) == etag {
 					hdr.Del("Content-Length")
 					hdr.Set("ETag", etag)
 					if hdr.Get("Cache-Control") == "" {
@@ -56,6 +69,7 @@ func CacheHeaders(maxBody int) gin.HandlerFunc {
 				}
 			}
 		}
+
 		hdr.Set("ETag", etag)
 		if hdr.Get("Cache-Control") == "" {
 			hdr.Set("Cache-Control", cacheControlForPath(c.FullPath(), c.Request.URL.RawQuery))
@@ -65,9 +79,9 @@ func CacheHeaders(maxBody int) gin.HandlerFunc {
 			hdr.Set("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
 		}
 		hdr.Set("Content-Length", strconv.Itoa(len(body)))
-		// Now flush body (status might have been set by handler)
+
+		// Flush buffered body now
 		if rw.headerWritten {
-			// handler called WriteHeader; we need to replay status
 			rw.ResponseWriter.WriteHeader(rw.status)
 		}
 		if len(body) > 0 {
@@ -82,6 +96,7 @@ type cacheRecorder struct {
 	buf           bytes.Buffer
 	limit         int
 	headerWritten bool
+	streaming     bool // true if body exceeded limit and we streamed directly
 }
 
 func (r *cacheRecorder) WriteHeader(code int) {
@@ -89,15 +104,39 @@ func (r *cacheRecorder) WriteHeader(code int) {
 	r.headerWritten = true /* defer real write until flush */
 }
 func (r *cacheRecorder) Write(b []byte) (int, error) {
-	if r.buf.Len() < r.limit {
-		remain := r.limit - r.buf.Len()
-		if len(b) > remain {
-			r.buf.Write(b[:remain])
-		} else {
-			r.buf.Write(b)
-		}
+	// If already streaming, just passthrough
+	if r.streaming {
+		return r.ResponseWriter.Write(b)
 	}
-	// swallow for now
+	// Try to buffer
+	if r.buf.Len()+len(b) > r.limit {
+		// Write what fits then flush and switch to streaming mode
+		remain := r.limit - r.buf.Len()
+		if remain > 0 {
+			r.buf.Write(b[:remain])
+			b = b[remain:]
+		}
+		// Flush buffered part now (headers not yet written to client)
+		if !r.headerWritten {
+			// To allow downstream to set status we delay until end; but since we must stream now, force header write
+			r.headerWritten = true
+			// underlying status might still be 200 (default)
+			r.ResponseWriter.WriteHeader(r.status)
+		}
+		if r.buf.Len() > 0 {
+			r.ResponseWriter.Write(r.buf.Bytes())
+			// Clear buffer to avoid double use; but keep contents for potential misuse? We discard to save memory
+			r.buf.Reset()
+		}
+		// Now write the remainder and mark streaming (no ETag possible)
+		if len(b) > 0 {
+			r.ResponseWriter.Write(b)
+		}
+		r.streaming = true
+		return len(b) + remain, nil
+	}
+	// Still within limit; buffer only
+	r.buf.Write(b)
 	return len(b), nil
 }
 
