@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// 對應到 https://github.com/carolchu1208/Hualian-Typhoon-Rescue-Site-Backend-Team/blob/main/spec.md#volunteer_organizations
+
 type createVolunteerOrgInput struct {
 	RegistrationStatus string  `json:"registration_status"`
 	OrganizationNature string  `json:"organization_nature"`
