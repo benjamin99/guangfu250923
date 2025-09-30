@@ -7,82 +7,533 @@ info:
 servers:
   - url: http://localhost:8080
 paths:
-  /healthz:
-    get:
-      summary: 健康檢查
-      responses:
-        '200':
-          description: OK
-  /requests:
-    get:
-      summary: 取得需求清單
-      parameters:
-        - in: query
-          name: status
-          schema:
-            type: string
-            enum: [pending, partial, fulfilled, closed]
-          description: 過濾狀態
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
-          description: 單頁筆數
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
-          description: 起始偏移 (資料列位移)
-      responses:
-        '200':
-          description: 成功
+  openapi: 3.0.3
+  info:
+    title: 災害物資需求 API
+    version: 0.1.0
+    description: |-
+      依據需求圖片實作的後端 API。提供建立物資需求、查詢需求清單、物資配送登記。
+  servers:
+    - url: http://localhost:8080
+  paths:
+    /healthz:
+      get:
+        summary: 健康檢查
+        responses:
+          '200': { description: OK }
+    /requests:
+      get:
+        summary: 取得需求清單
+        parameters:
+          - in: query
+            name: status
+            schema: { type: string, enum: [pending, partial, fulfilled, closed] }
+            description: 過濾狀態
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequestCollection' } } } }
+      post:
+        summary: 新增物資需求
+        requestBody:
+          required: true
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/RequestCollection'
-    post:
-      summary: 新增物資需求
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateRequestInput'
-      responses:
-        '201':
-          description: 建立成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Request'
-        '400': { description: 輸入錯誤 }
-  /supplies/distribute:
-    post:
-      summary: 物資配送 (累加 received_count)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/DistributionInput'
-      responses:
-        '200':
-          description: 更新後的供應項目
+              schema: { $ref: '#/components/schemas/CreateRequestInput' }
+        responses:
+          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Request' } } } }
+          '400': { description: 輸入錯誤 }
+    /supplies/distribute:
+      post:
+        summary: 物資配送 (累加 received_count)
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/SupplyItem'
-        '400': { description: 無效或超過需求數量 }
-  /supplies:
-    get:
-      summary: 取得所有物資清單 (扁平) 分頁
-      parameters:
+                items: { $ref: '#/components/schemas/DistributionInput' }
+        responses:
+          '200': { description: 更新後, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SupplyItem' } } } } }
+          '400': { description: 無效或超過需求數量 }
+    /supplies:
+      get:
+        summary: 取得所有物資清單 (扁平) 分頁
+        parameters:
+          - in: query
+            name: request_id
+            schema: { type: string, format: uuid }
+            description: 過濾某一需求的物資
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyCollection' } } } }
+    /sheet/snapshot:
+      get:
+        summary: 目前快取的 Google Sheet Tab 內容 (記憶體快取)
+        responses:
+          '200': { description: 快取資料, content: { application/json: { schema: { $ref: '#/components/schemas/SheetSnapshot' } } } }
+    /volunteer_organizations:
+      get:
+        summary: 取得志工招募單位清單 (分頁)
+        parameters:
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrgCollection' } } } }
+      post:
+        summary: 建立志工招募單位
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VolunteerOrgCreate' }
+        responses:
+          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrganization' } } } }
+          '400': { description: 輸入錯誤 }
+    /supplies_overview:
+      get:
+        summary: 供應需求整合清單 (含彙總欄位) 分頁
+        parameters:
+          - in: query
+            name: status
+            schema: { type: string }
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SuppliesOverviewCollection' } } } }
+    /shelters:
+      get:
+        summary: 取得庇護所清單 (分頁)
+        parameters:
+          - in: query
+            name: status
+            schema: { type: string }
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShelterCollection' } } } }
+      post:
+        summary: 建立庇護所
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShelterCreate' }
+        responses:
+          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+          '400': { description: 輸入錯誤 }
+    /shelters/{id}:
+      get:
+        summary: 取得單一庇護所
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+          '404': { description: 找不到 }
+      patch:
+        summary: 更新庇護所 (部分欄位)
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShelterPatch' }
+        responses:
+          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+          '400': { description: 輸入錯誤 }
+          '404': { description: 找不到 }
+    /medical_stations:
+      get:
+        summary: 取得醫療站清單 (分頁)
+        parameters:
+          - in: query
+            name: status
+            schema: { type: string }
+          - in: query
+            name: station_type
+            schema: { type: string }
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStationCollection' } } } }
+      post:
+        summary: 建立醫療站
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MedicalStationCreate' }
+        responses:
+          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
+          '400': { description: 輸入錯誤 }
+    /medical_stations/{id}:
+      get:
+        summary: 取得單一醫療站
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
+          '404': { description: 找不到 }
+      patch:
+        summary: 更新醫療站 (部分欄位)
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MedicalStationPatch' }
+        responses:
+          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
+          '400': { description: 輸入錯誤 }
+          '404': { description: 找不到 }
+    /mental_health_resources:
+      get:
+        summary: 取得心理健康資源清單 (分頁)
+        parameters:
+          - in: query
+            name: status
+            schema: { type: string }
+          - in: query
+            name: duration_type
+            schema: { type: string }
+          - in: query
+            name: service_format
+            schema: { type: string }
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResourceCollection' } } } }
+      post:
+        summary: 建立心理健康資源
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MentalHealthResourceCreate' }
+        responses:
+          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
+          '400': { description: 輸入錯誤 }
+    /mental_health_resources/{id}:
+      get:
+        summary: 取得單一心理健康資源
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
+          '404': { description: 找不到 }
+      patch:
+        summary: 更新心理健康資源 (部分欄位)
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MentalHealthResourcePatch' }
+        responses:
+          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
+          '400': { description: 輸入錯誤 }
+          '404': { description: 找不到 }
+    /accommodations:
+      get:
+        summary: 取得住宿資源清單 (分頁)
+        parameters:
+          - in: query
+            name: status
+            schema: { type: string }
+          - in: query
+            name: township
+            schema: { type: string }
+          - in: query
+            name: has_vacancy
+            schema: { type: string }
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/AccommodationCollection' } } } }
+      post:
+        summary: 建立住宿資源
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccommodationCreate' }
+        responses:
+          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
+          '400': { description: 輸入錯誤 }
+    /accommodations/{id}:
+      get:
+        summary: 取得單一住宿資源
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
+          '404': { description: 找不到 }
+      patch:
+        summary: 更新住宿資源 (部分欄位)
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccommodationPatch' }
+        responses:
+          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
+          '400': { description: 輸入錯誤 }
+          '404': { description: 找不到 }
+    /shower_stations:
+      get:
+        summary: 取得洗澡點清單 (分頁)
+        parameters:
+          - in: query
+            name: status
+            schema: { type: string }
+          - in: query
+            name: facility_type
+            schema: { type: string }
+          - in: query
+            name: is_free
+            schema: { type: boolean }
+          - in: query
+            name: requires_appointment
+            schema: { type: boolean }
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStationCollection' } } } }
+      post:
+        summary: 建立洗澡點
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShowerStationCreate' }
+        responses:
+          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
+          '400': { description: 輸入錯誤 }
+    /shower_stations/{id}:
+      get:
+        summary: 取得單一洗澡點
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
+          '404': { description: 找不到 }
+      patch:
+        summary: 更新洗澡點 (部分欄位)
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShowerStationPatch' }
+        responses:
+          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
+          '400': { description: 輸入錯誤 }
+          '404': { description: 找不到 }
+    /water_refill_stations:
+      get:
+        summary: 取得飲用水補給站清單 (分頁)
+        parameters:
+          - in: query
+            name: status
+            schema: { type: string }
+          - in: query
+            name: water_type
+            schema: { type: string }
+          - in: query
+            name: is_free
+            schema: { type: boolean }
+          - in: query
+            name: accessibility
+            schema: { type: boolean }
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStationCollection' } } } }
+      post:
+        summary: 建立飲用水補給站
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WaterRefillStationCreate' }
+        responses:
+          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
+          '400': { description: 輸入錯誤 }
+    /water_refill_stations/{id}:
+      get:
+        summary: 取得單一飲用水補給站
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
+          '404': { description: 找不到 }
+      patch:
+        summary: 更新飲用水補給站 (部分欄位)
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WaterRefillStationPatch' }
+        responses:
+          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
+          '400': { description: 輸入錯誤 }
+          '404': { description: 找不到 }
+    /restrooms:
+      get:
+        summary: 取得廁所點清單 (分頁)
+        parameters:
+          - in: query
+            name: status
+            schema: { type: string }
+          - in: query
+            name: facility_type
+            schema: { type: string }
+          - in: query
+            name: is_free
+            schema: { type: boolean }
+          - in: query
+            name: has_water
+            schema: { type: boolean }
+          - in: query
+            name: has_lighting
+            schema: { type: boolean }
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RestroomCollection' } } } }
+      post:
+        summary: 建立廁所點
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RestroomCreate' }
+        responses:
+          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
+          '400': { description: 輸入錯誤 }
+    /restrooms/{id}:
+      get:
+        summary: 取得單一廁所點
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
+          '404': { description: 找不到 }
+      patch:
+        summary: 更新廁所點 (部分欄位)
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema: { type: string, format: uuid }
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RestroomPatch' }
+        responses:
+          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
+          '400': { description: 輸入錯誤 }
+          '404': { description: 找不到 }
+  components:
         - in: query
-          name: request_id
-          schema: { type: string, format: uuid }
-          description: 過濾某一需求的物資
+          name: is_free
+          schema: { type: boolean }
+        - in: query
+          name: requires_appointment
+          schema: { type: boolean }
         - in: query
           name: limit
           schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
@@ -95,120 +546,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SupplyCollection'
-  /sheet/snapshot:
-    get:
-      summary: 目前快取的 Google Sheet Tab 內容 (記憶體快取)
-      responses:
-        '200':
-          description: 快取資料
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SheetSnapshot'
-  /volunteer_organizations:
-    get:
-      summary: 取得志工招募單位清單 (分頁)
-      parameters:
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VolunteerOrgCollection'
+                $ref: '#/components/schemas/ShowerStationCollection'
     post:
-      summary: 建立志工招募單位
+      summary: 建立洗澡點
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VolunteerOrgCreate'
+              $ref: '#/components/schemas/ShowerStationCreate'
       responses:
         '201':
           description: 建立成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VolunteerOrganization'
+                $ref: '#/components/schemas/ShowerStation'
         '400': { description: 輸入錯誤 }
-  /supplies_overview:
+  /shower_stations/{id}:
     get:
-      summary: 供應需求整合清單 (含彙總欄位) 分頁
-      parameters:
-        - in: query
-          name: status
-          schema: { type: string }
-          description: 過濾需求狀態
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuppliesOverviewCollection'
-  /shelters:
-    get:
-      summary: 取得庇護所清單 (分頁)
-      parameters:
-        - in: query
-          name: status
-          schema: { type: string }
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ShelterCollection'
-    post:
-      summary: 建立庇護所
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ShelterCreate'
-      responses:
-        '201':
-          description: 建立成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Shelter'
-        '400': { description: 輸入錯誤 }
-  /shelters/{id}:
-    get:
-      summary: 取得單一庇護所
+      summary: 取得單一洗澡點
       parameters:
         - in: path
           name: id
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
         '404': { description: 找不到 }
     patch:
-      summary: 更新庇護所 (部分欄位)
+      summary: 更新洗澡點 (部分欄位)
       parameters:
         - in: path
           name: id
@@ -219,9 +586,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ShelterPatch'
+              $ref: '#/components/schemas/ShowerStationPatch'
       responses:
-        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
         '400': { description: 輸入錯誤 }
         '404': { description: 找不到 }
 components:
@@ -417,6 +784,453 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/Shelter' }
+    MedicalStation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        station_type: { type: string, description: 'self_organized, fixed_point, shelter_medical' }
+        name: { type: string }
+        location: { type: string }
+        detailed_address: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        contact_person: { type: string, nullable: true }
+        status: { type: string, description: 'active, temporarily_closed, closed' }
+        services: { type: array, items: { type: string } }
+        operating_hours: { type: string, nullable: true }
+        equipment: { type: array, items: { type: string } }
+        medical_staff: { type: integer, nullable: true }
+        daily_capacity: { type: integer, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        affiliated_organization: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        link: { type: string, nullable: true }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+    MedicalStationCreate:
+      type: object
+      required: [station_type, name, location, status]
+      properties:
+        station_type: { type: string }
+        name: { type: string }
+        location: { type: string }
+        detailed_address: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        contact_person: { type: string, nullable: true }
+        status: { type: string }
+        services: { type: array, items: { type: string } }
+        operating_hours: { type: string, nullable: true }
+        equipment: { type: array, items: { type: string } }
+        medical_staff: { type: integer, nullable: true }
+        daily_capacity: { type: integer, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        affiliated_organization: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        link: { type: string, nullable: true }
+    MedicalStationPatch:
+      type: object
+      properties:
+        station_type: { type: string }
+        name: { type: string }
+        location: { type: string }
+        detailed_address: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        contact_person: { type: string, nullable: true }
+        status: { type: string }
+        services: { type: array, items: { type: string } }
+        operating_hours: { type: string, nullable: true }
+        equipment: { type: array, items: { type: string } }
+        medical_staff: { type: integer, nullable: true }
+        daily_capacity: { type: integer, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        affiliated_organization: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        link: { type: string, nullable: true }
+    MedicalStationCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/MedicalStation' }
+    MentalHealthResource:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        duration_type: { type: string, description: 'temporary, long_term, both' }
+        name: { type: string }
+        service_format: { type: string, description: 'onsite, phone, online, hybrid' }
+        service_hours: { type: string }
+        contact_info: { type: string }
+        website_url: { type: string, nullable: true }
+        target_audience: { type: array, items: { type: string } }
+        specialties: { type: array, items: { type: string } }
+        languages: { type: array, items: { type: string } }
+        is_free: { type: boolean }
+        location: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        status: { type: string, description: 'active, paused, ended' }
+        capacity: { type: integer, nullable: true }
+        waiting_time: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        emergency_support: { type: boolean }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+    MentalHealthResourceCreate:
+      type: object
+      required: [duration_type, name, service_format, service_hours, contact_info, is_free, status, emergency_support]
+      properties:
+        duration_type: { type: string }
+        name: { type: string }
+        service_format: { type: string }
+        service_hours: { type: string }
+        contact_info: { type: string }
+        website_url: { type: string, nullable: true }
+        target_audience: { type: array, items: { type: string } }
+        specialties: { type: array, items: { type: string } }
+        languages: { type: array, items: { type: string } }
+        is_free: { type: boolean }
+        location: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        status: { type: string }
+        capacity: { type: integer, nullable: true }
+        waiting_time: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        emergency_support: { type: boolean }
+    MentalHealthResourcePatch:
+      type: object
+      properties:
+        duration_type: { type: string }
+        name: { type: string }
+        service_format: { type: string }
+        service_hours: { type: string }
+        contact_info: { type: string }
+        website_url: { type: string, nullable: true }
+        target_audience: { type: array, items: { type: string } }
+        specialties: { type: array, items: { type: string } }
+        languages: { type: array, items: { type: string } }
+        is_free: { type: boolean }
+        location: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        status: { type: string }
+        capacity: { type: integer, nullable: true }
+        waiting_time: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        emergency_support: { type: boolean }
+    MentalHealthResourceCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/MentalHealthResource' }
+    Accommodation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        township: { type: string }
+        name: { type: string }
+        has_vacancy: { type: string, description: 'available, full, unknown, need_confirm' }
+        available_period: { type: string }
+        restrictions: { type: string, nullable: true }
+        contact_info: { type: string }
+        room_info: { type: string, nullable: true }
+        address: { type: string }
+        pricing: { type: string }
+        info_source: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        capacity: { type: integer, nullable: true }
+        status: { type: string, description: 'active, paused, ended' }
+        registration_method: { type: string, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        distance_to_disaster_area: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+    AccommodationCreate:
+      type: object
+      required: [township, name, has_vacancy, available_period, contact_info, address, pricing, status]
+      properties:
+        township: { type: string }
+        name: { type: string }
+        has_vacancy: { type: string }
+        available_period: { type: string }
+        restrictions: { type: string, nullable: true }
+        contact_info: { type: string }
+        room_info: { type: string, nullable: true }
+        address: { type: string }
+        pricing: { type: string }
+        info_source: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        capacity: { type: integer, nullable: true }
+        status: { type: string }
+        registration_method: { type: string, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        distance_to_disaster_area: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+    AccommodationPatch:
+      type: object
+      properties:
+        township: { type: string }
+        name: { type: string }
+        has_vacancy: { type: string }
+        available_period: { type: string }
+        restrictions: { type: string, nullable: true }
+        contact_info: { type: string }
+        room_info: { type: string, nullable: true }
+        address: { type: string }
+        pricing: { type: string }
+        info_source: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        capacity: { type: integer, nullable: true }
+        status: { type: string }
+        registration_method: { type: string, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        distance_to_disaster_area: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+    AccommodationCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/Accommodation' }
+    ShowerStation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string, nullable: true }
+        facility_type: { type: string, description: 'mobile_shower, coin_operated, regular_bathroom' }
+        time_slots: { type: string }
+        gender_schedule:
+          type: object
+          nullable: true
+          properties:
+            male: { type: array, items: { type: string } }
+            female: { type: array, items: { type: string } }
+        available_period: { type: string }
+        capacity: { type: integer, nullable: true }
+        is_free: { type: boolean }
+        pricing: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        info_source: { type: string, nullable: true }
+        status: { type: string, description: 'active, temporarily_closed, ended' }
+        facilities: { type: array, items: { type: string } }
+        distance_to_guangfu: { type: string, nullable: true }
+        requires_appointment: { type: boolean }
+        contact_method: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+    ShowerStationCreate:
+      type: object
+      required: [name, address, facility_type, time_slots, available_period, is_free, status, requires_appointment]
+      properties:
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string, nullable: true }
+        facility_type: { type: string }
+        time_slots: { type: string }
+        gender_schedule:
+          type: object
+          nullable: true
+          properties:
+            male: { type: array, items: { type: string } }
+            female: { type: array, items: { type: string } }
+        available_period: { type: string }
+        capacity: { type: integer, nullable: true }
+        is_free: { type: boolean }
+        pricing: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        info_source: { type: string, nullable: true }
+        status: { type: string }
+        facilities: { type: array, items: { type: string } }
+        distance_to_guangfu: { type: string, nullable: true }
+        requires_appointment: { type: boolean }
+        contact_method: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+    ShowerStationPatch:
+      type: object
+      properties:
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string, nullable: true }
+        facility_type: { type: string }
+        time_slots: { type: string }
+        gender_schedule:
+          type: object
+          nullable: true
+          properties:
+            male: { type: array, items: { type: string } }
+            female: { type: array, items: { type: string } }
+        available_period: { type: string }
+        capacity: { type: integer, nullable: true }
+        is_free: { type: boolean }
+        pricing: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        info_source: { type: string, nullable: true }
+        status: { type: string }
+        facilities: { type: array, items: { type: string } }
+        distance_to_guangfu: { type: string, nullable: true }
+        requires_appointment: { type: boolean }
+        contact_method: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+    ShowerStationCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/ShowerStation' }
+    WaterRefillStation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string, nullable: true }
+        water_type: { type: string, description: 'drinking_water, bottled_water, filtered_water' }
+        opening_hours: { type: string }
+        is_free: { type: boolean }
+        container_required: { type: string, nullable: true }
+        daily_capacity: { type: integer, nullable: true }
+        status: { type: string, description: 'active, temporarily_unavailable, ended' }
+        water_quality: { type: string, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        accessibility: { type: boolean }
+        distance_to_disaster_area: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        info_source: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+    WaterRefillStationCreate:
+      type: object
+      required: [name, address, water_type, opening_hours, is_free, status, accessibility]
+      properties:
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string, nullable: true }
+        water_type: { type: string }
+        opening_hours: { type: string }
+        is_free: { type: boolean }
+        container_required: { type: string, nullable: true }
+        daily_capacity: { type: integer, nullable: true }
+        status: { type: string }
+        water_quality: { type: string, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        accessibility: { type: boolean }
+        distance_to_disaster_area: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        info_source: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+    WaterRefillStationPatch:
+      type: object
+      properties:
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string, nullable: true }
+        water_type: { type: string }
+        opening_hours: { type: string }
+        is_free: { type: boolean }
+        container_required: { type: string, nullable: true }
+        daily_capacity: { type: integer, nullable: true }
+        status: { type: string }
+        water_quality: { type: string, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        accessibility: { type: boolean }
+        distance_to_disaster_area: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        info_source: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+    WaterRefillStationCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/WaterRefillStation' }
     CreateRequestInput:
       type: object
       required: [name]
