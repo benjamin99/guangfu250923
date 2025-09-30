@@ -37,7 +37,8 @@ func main() {
 	// CORS configuration: allow specified front-end origins
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			"*",
+			// "*",
+			"http://127.0.0.1:5500",
 			"http://localhost:5050",
 			"http://127.0.0.1:5050",
 			"https://sites.google.com/view/guangfu250923",

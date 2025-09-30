@@ -99,7 +99,11 @@ func RequestLogger(pool *pgxpool.Pool, maxHeaderBytes int) gin.HandlerFunc {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 			var rid interface{}
-			if resID != nil { rid = *resID } else { rid = nil }
+			if resID != nil {
+				rid = *resID
+			} else {
+				rid = nil
+			}
 			_, _ = pool.Exec(ctx, `insert into request_logs(method,path,query,ip,headers,status_code,error,duration_ms,request_body,original_data,result_data,resource_id) values($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12)`,
 				method, path, rawQuery, ip, string(headers), status, nullIfEmpty(errText), int(took.Milliseconds()), bytesOrNull(reqBody), jsonOrNull(orig), jsonOrNull(result), rid)
 		}(c.Request.Method, c.FullPath(), c.Request.URL.RawQuery, clientIP(c), recorder.status, errMsg, headersJSON, dur, rawBody, originalData, recorder.buf.Bytes(), resourceID)
@@ -116,13 +120,17 @@ func nullIfEmpty(s string) *string {
 }
 
 func bytesOrNull(b []byte) *string {
-	if len(b) == 0 { return nil }
+	if len(b) == 0 {
+		return nil
+	}
 	s := string(b)
 	return &s
 }
 
 func jsonOrNull(b []byte) *string {
-	if len(b) == 0 { return nil }
+	if len(b) == 0 {
+		return nil
+	}
 	s := string(b)
 	return &s
 }
@@ -133,14 +141,20 @@ var idPattern = regexp.MustCompile(`(?i)^[0-9a-f-]{16,36}$`)
 func extractIDFromPath(fullPathPattern, actual string) string {
 	// gin's c.FullPath() returns pattern like /shelters/:id
 	// actual path is e.g. /shelters/uuid-value
-	if !strings.Contains(fullPathPattern, ":id") { return "" }
+	if !strings.Contains(fullPathPattern, ":id") {
+		return ""
+	}
 	partsP := strings.Split(fullPathPattern, "/")
 	partsA := strings.Split(actual, "/")
-	if len(partsP) != len(partsA) { return "" }
+	if len(partsP) != len(partsA) {
+		return ""
+	}
 	for i := range partsP {
 		if partsP[i] == ":id" {
 			cand := partsA[i]
-			if idPattern.MatchString(cand) { return cand }
+			if idPattern.MatchString(cand) {
+				return cand
+			}
 			return ""
 		}
 	}
@@ -171,7 +185,9 @@ func fetchOriginal(c *gin.Context, pool *pgxpool.Pool, pattern, id string) []byt
 		return nil
 	}
 	var raw *string
-	if err := pool.QueryRow(ctx, sql, id).Scan(&raw); err != nil || raw == nil { return nil }
+	if err := pool.QueryRow(ctx, sql, id).Scan(&raw); err != nil || raw == nil {
+		return nil
+	}
 	return []byte(*raw)
 }
 
