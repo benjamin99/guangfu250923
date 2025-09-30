@@ -7,539 +7,367 @@ info:
 servers:
   - url: http://localhost:8080
 paths:
-  openapi: 3.0.3
-  info:
-    title: 災害物資需求 API
-    version: 0.1.0
-    description: |-
-      依據需求圖片實作的後端 API。提供建立物資需求、查詢需求清單、物資配送登記。
-  servers:
-    - url: http://localhost:8080
-  paths:
-    /healthz:
-      get:
-        summary: 健康檢查
-        responses:
-          '200': { description: OK }
-    /requests:
-      get:
-        summary: 取得需求清單
-        parameters:
-          - in: query
-            name: status
-            schema: { type: string, enum: [pending, partial, fulfilled, closed] }
-            description: 過濾狀態
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequestCollection' } } } }
-      post:
-        summary: 新增物資需求
-        requestBody:
+  /healthz:
+    get:
+      operationId: getHealthz
+      summary: 健康檢查
+      responses:
+        '200': { description: OK }
+  /requests:
+    get:
+      operationId: listRequests
+      summary: 取得需求清單
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, partial, fulfilled, closed] }
+          description: 過濾狀態
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequestCollection' } } } }
+    post:
+      operationId: createRequest
+      summary: 新增物資需求
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRequestInput' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Request' } } } }
+        '400': { description: 輸入錯誤 }
+  /supplies/distribute:
+    post:
+      operationId: distributeSupplies
+      summary: 物資配送 (累加 received_count)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '#/components/schemas/DistributionInput' }
+      responses:
+        '200': { description: 更新後, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SupplyItem' } } } } }
+        '400': { description: 無效或超過需求數量 }
+  /supplies:
+    get:
+      operationId: listSupplies
+      summary: 取得所有物資清單 (扁平) 分頁
+      parameters:
+        - in: query
+          name: request_id
+          schema: { type: string, format: uuid }
+          description: 過濾某一需求的物資
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyCollection' } } } }
+  /sheet/snapshot:
+    get:
+      operationId: getSheetSnapshot
+      summary: 目前快取的 Google Sheet Tab 內容 (記憶體快取)
+      responses:
+        '200': { description: 快取資料, content: { application/json: { schema: { $ref: '#/components/schemas/SheetSnapshot' } } } }
+  /volunteer_organizations:
+    get:
+      operationId: listVolunteerOrgs
+      summary: 取得志工招募單位清單 (分頁)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrgCollection' } } } }
+    post:
+      operationId: createVolunteerOrg
+      summary: 建立志工招募單位
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VolunteerOrgCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrganization' } } } }
+        '400': { description: 輸入錯誤 }
+  /supplies_overview:
+    get:
+      operationId: listSuppliesOverview
+      summary: 供應需求整合清單 (含彙總欄位) 分頁
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SuppliesOverviewCollection' } } } }
+  /shelters:
+    get:
+      operationId: listShelters
+      summary: 取得庇護所清單 (分頁)
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShelterCollection' } } } }
+    post:
+      operationId: createShelter
+      summary: 建立庇護所
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShelterCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+        '400': { description: 輸入錯誤 }
+  /shelters/{id}:
+    get:
+      operationId: getShelter
+      summary: 取得單一庇護所
+      parameters:
+        - in: path
+          name: id
           required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/CreateRequestInput' }
-        responses:
-          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Request' } } } }
-          '400': { description: 輸入錯誤 }
-    /supplies/distribute:
-      post:
-        summary: 物資配送 (累加 received_count)
-        requestBody:
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchShelter
+      summary: 更新庇護所 (部分欄位)
+      parameters:
+        - in: path
+          name: id
           required: true
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/DistributionInput' }
-        responses:
-          '200': { description: 更新後, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SupplyItem' } } } } }
-          '400': { description: 無效或超過需求數量 }
-    /supplies:
-      get:
-        summary: 取得所有物資清單 (扁平) 分頁
-        parameters:
-          - in: query
-            name: request_id
-            schema: { type: string, format: uuid }
-            description: 過濾某一需求的物資
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyCollection' } } } }
-    /sheet/snapshot:
-      get:
-        summary: 目前快取的 Google Sheet Tab 內容 (記憶體快取)
-        responses:
-          '200': { description: 快取資料, content: { application/json: { schema: { $ref: '#/components/schemas/SheetSnapshot' } } } }
-    /volunteer_organizations:
-      get:
-        summary: 取得志工招募單位清單 (分頁)
-        parameters:
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrgCollection' } } } }
-      post:
-        summary: 建立志工招募單位
-        requestBody:
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShelterPatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
+  /medical_stations:
+    get:
+      operationId: listMedicalStations
+      summary: 取得醫療站清單 (分頁)
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: station_type
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStationCollection' } } } }
+    post:
+      operationId: createMedicalStation
+      summary: 建立醫療站
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MedicalStationCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
+        '400': { description: 輸入錯誤 }
+  /medical_stations/{id}:
+    get:
+      operationId: getMedicalStation
+      summary: 取得單一醫療站
+      parameters:
+        - in: path
+          name: id
           required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/VolunteerOrgCreate' }
-        responses:
-          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrganization' } } } }
-          '400': { description: 輸入錯誤 }
-    /supplies_overview:
-      get:
-        summary: 供應需求整合清單 (含彙總欄位) 分頁
-        parameters:
-          - in: query
-            name: status
-            schema: { type: string }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SuppliesOverviewCollection' } } } }
-    /shelters:
-      get:
-        summary: 取得庇護所清單 (分頁)
-        parameters:
-          - in: query
-            name: status
-            schema: { type: string }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShelterCollection' } } } }
-      post:
-        summary: 建立庇護所
-        requestBody:
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchMedicalStation
+      summary: 更新醫療站 (部分欄位)
+      parameters:
+        - in: path
+          name: id
           required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ShelterCreate' }
-        responses:
-          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
-          '400': { description: 輸入錯誤 }
-    /shelters/{id}:
-      get:
-        summary: 取得單一庇護所
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
-          '404': { description: 找不到 }
-      patch:
-        summary: 更新庇護所 (部分欄位)
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        requestBody:
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MedicalStationPatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
+  /mental_health_resources:
+    get:
+      operationId: listMentalHealthResources
+      summary: 取得心理健康資源清單 (分頁)
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: duration_type
+          schema: { type: string }
+        - in: query
+          name: service_format
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResourceCollection' } } } }
+    post:
+      operationId: createMentalHealthResource
+      summary: 建立心理健康資源
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MentalHealthResourceCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
+        '400': { description: 輸入錯誤 }
+  /mental_health_resources/{id}:
+    get:
+      operationId: getMentalHealthResource
+      summary: 取得單一心理健康資源
+      parameters:
+        - in: path
+          name: id
           required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ShelterPatch' }
-        responses:
-          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
-          '400': { description: 輸入錯誤 }
-          '404': { description: 找不到 }
-    /medical_stations:
-      get:
-        summary: 取得醫療站清單 (分頁)
-        parameters:
-          - in: query
-            name: status
-            schema: { type: string }
-          - in: query
-            name: station_type
-            schema: { type: string }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStationCollection' } } } }
-      post:
-        summary: 建立醫療站
-        requestBody:
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchMentalHealthResource
+      summary: 更新心理健康資源 (部分欄位)
+      parameters:
+        - in: path
+          name: id
           required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/MedicalStationCreate' }
-        responses:
-          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
-          '400': { description: 輸入錯誤 }
-    /medical_stations/{id}:
-      get:
-        summary: 取得單一醫療站
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
-          '404': { description: 找不到 }
-      patch:
-        summary: 更新醫療站 (部分欄位)
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        requestBody:
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MentalHealthResourcePatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
+  /accommodations:
+    get:
+      operationId: listAccommodations
+      summary: 取得住宿資源清單 (分頁)
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: township
+          schema: { type: string }
+        - in: query
+          name: has_vacancy
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/AccommodationCollection' } } } }
+    post:
+      operationId: createAccommodation
+      summary: 建立住宿資源
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccommodationCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
+        '400': { description: 輸入錯誤 }
+  /accommodations/{id}:
+    get:
+      operationId: getAccommodation
+      summary: 取得單一住宿資源
+      parameters:
+        - in: path
+          name: id
           required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/MedicalStationPatch' }
-        responses:
-          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
-          '400': { description: 輸入錯誤 }
-          '404': { description: 找不到 }
-    /mental_health_resources:
-      get:
-        summary: 取得心理健康資源清單 (分頁)
-        parameters:
-          - in: query
-            name: status
-            schema: { type: string }
-          - in: query
-            name: duration_type
-            schema: { type: string }
-          - in: query
-            name: service_format
-            schema: { type: string }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResourceCollection' } } } }
-      post:
-        summary: 建立心理健康資源
-        requestBody:
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchAccommodation
+      summary: 更新住宿資源 (部分欄位)
+      parameters:
+        - in: path
+          name: id
           required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/MentalHealthResourceCreate' }
-        responses:
-          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
-          '400': { description: 輸入錯誤 }
-    /mental_health_resources/{id}:
-      get:
-        summary: 取得單一心理健康資源
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
-          '404': { description: 找不到 }
-      patch:
-        summary: 更新心理健康資源 (部分欄位)
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/MentalHealthResourcePatch' }
-        responses:
-          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
-          '400': { description: 輸入錯誤 }
-          '404': { description: 找不到 }
-    /accommodations:
-      get:
-        summary: 取得住宿資源清單 (分頁)
-        parameters:
-          - in: query
-            name: status
-            schema: { type: string }
-          - in: query
-            name: township
-            schema: { type: string }
-          - in: query
-            name: has_vacancy
-            schema: { type: string }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/AccommodationCollection' } } } }
-      post:
-        summary: 建立住宿資源
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AccommodationCreate' }
-        responses:
-          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
-          '400': { description: 輸入錯誤 }
-    /accommodations/{id}:
-      get:
-        summary: 取得單一住宿資源
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
-          '404': { description: 找不到 }
-      patch:
-        summary: 更新住宿資源 (部分欄位)
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AccommodationPatch' }
-        responses:
-          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
-          '400': { description: 輸入錯誤 }
-          '404': { description: 找不到 }
-    /shower_stations:
-      get:
-        summary: 取得洗澡點清單 (分頁)
-        parameters:
-          - in: query
-            name: status
-            schema: { type: string }
-          - in: query
-            name: facility_type
-            schema: { type: string }
-          - in: query
-            name: is_free
-            schema: { type: boolean }
-          - in: query
-            name: requires_appointment
-            schema: { type: boolean }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStationCollection' } } } }
-      post:
-        summary: 建立洗澡點
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ShowerStationCreate' }
-        responses:
-          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
-          '400': { description: 輸入錯誤 }
-    /shower_stations/{id}:
-      get:
-        summary: 取得單一洗澡點
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
-          '404': { description: 找不到 }
-      patch:
-        summary: 更新洗澡點 (部分欄位)
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ShowerStationPatch' }
-        responses:
-          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
-          '400': { description: 輸入錯誤 }
-          '404': { description: 找不到 }
-    /water_refill_stations:
-      get:
-        summary: 取得飲用水補給站清單 (分頁)
-        parameters:
-          - in: query
-            name: status
-            schema: { type: string }
-          - in: query
-            name: water_type
-            schema: { type: string }
-          - in: query
-            name: is_free
-            schema: { type: boolean }
-          - in: query
-            name: accessibility
-            schema: { type: boolean }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStationCollection' } } } }
-      post:
-        summary: 建立飲用水補給站
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/WaterRefillStationCreate' }
-        responses:
-          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
-          '400': { description: 輸入錯誤 }
-    /water_refill_stations/{id}:
-      get:
-        summary: 取得單一飲用水補給站
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
-          '404': { description: 找不到 }
-      patch:
-        summary: 更新飲用水補給站 (部分欄位)
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/WaterRefillStationPatch' }
-        responses:
-          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
-          '400': { description: 輸入錯誤 }
-          '404': { description: 找不到 }
-    /restrooms:
-      get:
-        summary: 取得廁所點清單 (分頁)
-        parameters:
-          - in: query
-            name: status
-            schema: { type: string }
-          - in: query
-            name: facility_type
-            schema: { type: string }
-          - in: query
-            name: is_free
-            schema: { type: boolean }
-          - in: query
-            name: has_water
-            schema: { type: boolean }
-          - in: query
-            name: has_lighting
-            schema: { type: boolean }
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RestroomCollection' } } } }
-      post:
-        summary: 建立廁所點
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/RestroomCreate' }
-        responses:
-          '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
-          '400': { description: 輸入錯誤 }
-    /restrooms/{id}:
-      get:
-        summary: 取得單一廁所點
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
-          '404': { description: 找不到 }
-      patch:
-        summary: 更新廁所點 (部分欄位)
-        parameters:
-          - in: path
-            name: id
-            required: true
-            schema: { type: string, format: uuid }
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/RestroomPatch' }
-        responses:
-          '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
-          '400': { description: 輸入錯誤 }
-          '404': { description: 找不到 }
-    /_admin/request_logs:
-      get:
-        summary: 最近的請求紀錄 (管理用途)
-        parameters:
-          - in: query
-            name: limit
-            schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
-          - in: query
-            name: offset
-            schema: { type: integer, minimum: 0, default: 0 }
-        responses:
-          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequestLogCollection' } } } }
-  components:
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccommodationPatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
+  /shower_stations:
+    get:
+      operationId: listShowerStations
+      summary: 取得洗澡點清單 (分頁)
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: facility_type
+          schema: { type: string }
         - in: query
           name: is_free
           schema: { type: boolean }
@@ -553,30 +381,21 @@ paths:
           name: offset
           schema: { type: integer, minimum: 0, default: 0 }
       responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ShowerStationCollection'
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStationCollection' } } } }
     post:
+      operationId: createShowerStation
       summary: 建立洗澡點
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/ShowerStationCreate'
+            schema: { $ref: '#/components/schemas/ShowerStationCreate' }
       responses:
-        '201':
-          description: 建立成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ShowerStation'
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
         '400': { description: 輸入錯誤 }
   /shower_stations/{id}:
     get:
+      operationId: getShowerStation
       summary: 取得單一洗澡點
       parameters:
         - in: path
@@ -587,6 +406,7 @@ paths:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
         '404': { description: 找不到 }
     patch:
+      operationId: patchShowerStation
       summary: 更新洗澡點 (部分欄位)
       parameters:
         - in: path
@@ -597,12 +417,157 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/ShowerStationPatch'
+            schema: { $ref: '#/components/schemas/ShowerStationPatch' }
       responses:
         '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
         '400': { description: 輸入錯誤 }
         '404': { description: 找不到 }
+  /water_refill_stations:
+    get:
+      operationId: listWaterRefillStations
+      summary: 取得飲用水補給站清單 (分頁)
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: water_type
+          schema: { type: string }
+        - in: query
+          name: is_free
+          schema: { type: boolean }
+        - in: query
+          name: accessibility
+          schema: { type: boolean }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStationCollection' } } } }
+    post:
+      operationId: createWaterRefillStation
+      summary: 建立飲用水補給站
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WaterRefillStationCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
+        '400': { description: 輸入錯誤 }
+  /water_refill_stations/{id}:
+    get:
+      operationId: getWaterRefillStation
+      summary: 取得單一飲用水補給站
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchWaterRefillStation
+      summary: 更新飲用水補給站 (部分欄位)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WaterRefillStationPatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
+  /restrooms:
+    get:
+      operationId: listRestrooms
+      summary: 取得廁所點清單 (分頁)
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: facility_type
+          schema: { type: string }
+        - in: query
+          name: is_free
+          schema: { type: boolean }
+        - in: query
+          name: has_water
+          schema: { type: boolean }
+        - in: query
+          name: has_lighting
+          schema: { type: boolean }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RestroomCollection' } } } }
+    post:
+      operationId: createRestroom
+      summary: 建立廁所點
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RestroomCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
+        '400': { description: 輸入錯誤 }
+  /restrooms/{id}:
+    get:
+      operationId: getRestroom
+      summary: 取得單一廁所點
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchRestroom
+      summary: 更新廁所點 (部分欄位)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RestroomPatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
+  /_admin/request_logs:
+    get:
+      operationId: listRequestLogs
+      summary: 最近的請求紀錄 (管理用途)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequestLogCollection' } } } }
 components:
   schemas:
     CollectionBase:
@@ -1280,27 +1245,6 @@ components:
         status: { type: string }
         needed_people: { type: integer }
         notes: { type: string }
-        RequestLog:
-          type: object
-          properties:
-            id: { type: string, format: uuid }
-            method: { type: string }
-            path: { type: string }
-            query: { type: string, nullable: true }
-            ip: { type: string }
-            headers: { type: object, additionalProperties: { type: string } }
-            status_code: { type: integer }
-            error: { type: string, nullable: true }
-            duration_ms: { type: integer }
-            created_at: { type: integer, format: int64 }
-        RequestLogCollection:
-          allOf:
-            - $ref: '#/components/schemas/CollectionBase'
-            - type: object
-              properties:
-                member:
-                  type: array
-                  items: { $ref: '#/components/schemas/RequestLog' }
         lng: { type: number, format: double }
         lat: { type: number, format: double }
         map_link: { type: string }
@@ -1310,11 +1254,128 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SupplyItem'
+    RequestLog:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        method: { type: string }
+        path: { type: string }
+        query: { type: string, nullable: true }
+        ip: { type: string }
+        headers: { type: object, additionalProperties: { type: string } }
+        status_code: { type: integer }
+        error: { type: string, nullable: true }
+        duration_ms: { type: integer }
+        created_at: { type: integer, format: int64 }
+    RequestLogCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/RequestLog' }
+    Restroom:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string, nullable: true }
+        facility_type: { type: string }
+        opening_hours: { type: string }
+        is_free: { type: boolean }
+        male_units: { type: integer, nullable: true }
+        female_units: { type: integer, nullable: true }
+        unisex_units: { type: integer, nullable: true }
+        accessible_units: { type: integer, nullable: true }
+        has_water: { type: boolean }
+        has_lighting: { type: boolean }
+        status: { type: string }
+        cleanliness: { type: string, nullable: true }
+        last_cleaned: { type: integer, format: int64, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        distance_to_disaster_area: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        info_source: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+    RestroomCreate:
+      type: object
+      required: [name, address, facility_type, opening_hours, is_free, has_water, has_lighting, status]
+      properties:
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string, nullable: true }
+        facility_type: { type: string }
+        opening_hours: { type: string }
+        is_free: { type: boolean }
+        male_units: { type: integer, nullable: true }
+        female_units: { type: integer, nullable: true }
+        unisex_units: { type: integer, nullable: true }
+        accessible_units: { type: integer, nullable: true }
+        has_water: { type: boolean }
+        has_lighting: { type: boolean }
+        status: { type: string }
+        cleanliness: { type: string, nullable: true }
+        last_cleaned: { type: integer, format: int64, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        distance_to_disaster_area: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        info_source: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+    RestroomPatch:
+      type: object
+      properties:
+        name: { type: string }
+        address: { type: string }
+        phone: { type: string, nullable: true }
+        facility_type: { type: string }
+        opening_hours: { type: string }
+        is_free: { type: boolean }
+        male_units: { type: integer, nullable: true }
+        female_units: { type: integer, nullable: true }
+        unisex_units: { type: integer, nullable: true }
+        accessible_units: { type: integer, nullable: true }
+        has_water: { type: boolean }
+        has_lighting: { type: boolean }
+        status: { type: string }
+        cleanliness: { type: string, nullable: true }
+        last_cleaned: { type: integer, format: int64, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        distance_to_disaster_area: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        info_source: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+    RestroomCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/Restroom' }
     SupplyItemCreate:
       type: object
       required: [name, total_count, unit]
       properties:
-        tag: { type: string, description: 物資種類: food/medical/daily/equipment/other }
+        tag: { type: string, description: "物資種類: food / medical / daily / equipment / other", enum: [food, medical, daily, equipment, other] }
         name: { type: string }
         total_count: { type: integer }
         received_count: { type: integer, default: 0, description: '已取得數量' }

@@ -52,7 +52,7 @@ jobs:
           npm install -g @stoplight/spectral-cli
       - name: Lint openapi.yaml
         run: |
-          spectral lint openapi.yaml || exit 1
+          spectral lint --ruleset .spectral.yaml openapi.yaml || exit 1
 
   verify-migrations:
     name: Migrate (syntax only)

@@ -1,0 +1,11 @@
+extends: spectral:oas
+
+rules:
+  info-contact: off
+  license-url: off
+  operation-tags: off          # allow missing tags
+  operation-description: warn  # encourage adding descriptions
+  operation-success-response: warn
+  operation-operationId-unique: warn
+  path-params: warn
+  tag-description: off
