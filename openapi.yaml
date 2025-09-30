@@ -527,6 +527,18 @@ paths:
           '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
           '400': { description: 輸入錯誤 }
           '404': { description: 找不到 }
+    /_admin/request_logs:
+      get:
+        summary: 最近的請求紀錄 (管理用途)
+        parameters:
+          - in: query
+            name: limit
+            schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+          - in: query
+            name: offset
+            schema: { type: integer, minimum: 0, default: 0 }
+        responses:
+          '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequestLogCollection' } } } }
   components:
         - in: query
           name: is_free
@@ -1268,6 +1280,27 @@ components:
         status: { type: string }
         needed_people: { type: integer }
         notes: { type: string }
+        RequestLog:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            method: { type: string }
+            path: { type: string }
+            query: { type: string, nullable: true }
+            ip: { type: string }
+            headers: { type: object, additionalProperties: { type: string } }
+            status_code: { type: integer }
+            error: { type: string, nullable: true }
+            duration_ms: { type: integer }
+            created_at: { type: integer, format: int64 }
+        RequestLogCollection:
+          allOf:
+            - $ref: '#/components/schemas/CollectionBase'
+            - type: object
+              properties:
+                member:
+                  type: array
+                  items: { $ref: '#/components/schemas/RequestLog' }
         lng: { type: number, format: double }
         lat: { type: number, format: double }
         map_link: { type: string }

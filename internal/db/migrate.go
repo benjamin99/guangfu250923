@@ -281,6 +281,20 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_restrooms_is_free on restrooms(is_free)`,
 		`create index if not exists idx_restrooms_has_water on restrooms(has_water)`,
 		`create index if not exists idx_restrooms_has_lighting on restrooms(has_lighting)`,
+		`create table if not exists request_logs (
+            id uuid primary key default gen_random_uuid(),
+            method text not null,
+            path text not null,
+            query text,
+            ip text,
+            headers jsonb,
+            status_code int,
+            error text,
+            duration_ms int,
+            created_at timestamptz not null default now()
+        )`,
+		`create index if not exists idx_request_logs_created_at on request_logs(created_at)`,
+		`create index if not exists idx_request_logs_status_code on request_logs(status_code)`,
 	}
 	for _, s := range stmts {
 		if _, err := pool.Exec(ctx, s); err != nil {

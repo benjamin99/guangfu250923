@@ -10,6 +10,7 @@ import (
 	"guangfu250923/internal/config"
 	"guangfu250923/internal/db"
 	"guangfu250923/internal/handlers"
+	"guangfu250923/internal/middleware"
 	"guangfu250923/internal/sheetcache"
 
 	"github.com/gin-gonic/gin"
@@ -32,6 +33,7 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Use(middleware.RequestLogger(pool, 0))
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
 	// Sheet cache
@@ -80,6 +82,8 @@ func main() {
 	r.PATCH("/restrooms/:id", h.PatchRestroom)
 	r.POST("/volunteer_organizations", h.CreateVolunteerOrg)
 	r.GET("/volunteer_organizations", h.ListVolunteerOrgs)
+	// Admin: request logs
+	r.GET("/_admin/request_logs", h.ListRequestLogs)
 
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: r}
 	log.Printf("server listening on :%s", cfg.Port)
