@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: 災害物資需求 API
-  version: 0.1.0
+  version: v1.1.0
   description: |-
     依據需求圖片實作的後端 API。提供建立物資需求、查詢需求清單、物資配送登記。
 servers:
@@ -973,82 +973,82 @@ components:
     MentalHealthResource:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        duration_type: { type: string, description: 'temporary, long_term, both' }
-        name: { type: string }
-        service_format: { type: string, description: 'onsite, phone, online, hybrid' }
-        service_hours: { type: string }
-        contact_info: { type: string }
-        website_url: { type: string, nullable: true }
-        target_audience: { type: array, items: { type: string } }
-        specialties: { type: array, items: { type: string } }
-        languages: { type: array, items: { type: string } }
-        is_free: { type: boolean }
-        location: { type: string, nullable: true }
+        id: { type: string, format: uuid, description: 資源唯一識別碼, example: 123e4567-e89b-12d3-a456-426614174000 }
+        duration_type: { type: string, description: '服務期間類型: temporary=短期, long_term=長期, both=皆可', example: temporary }
+        name: { type: string, description: 服務單位或計畫名稱, example: 光復災後心理支持團隊 }
+        service_format: { type: string, description: '服務形式: onsite=現場, phone=電話, online=線上, hybrid=混合', example: onsite }
+        service_hours: { type: string, description: 服務時間, example: 週一至週五 09:00-17:00 }
+        contact_info: { type: string, description: 聯繫方式（電話 / 信箱 / 其他）, example: '0800-123-456 / support@example.org' }
+        website_url: { type: string, nullable: true, description: 網址, example: https://example.org }
+        target_audience: { type: array, description: 服務對象, items: { type: string }, example: ['災民','志工','救災人員'] }
+        specialties: { type: array, description: 專業領域, items: { type: string }, example: ['創傷輔導','壓力管理','哀傷輔導'] }
+        languages: { type: array, description: 提供語言服務, items: { type: string }, example: ['中文','台語','英文'] }
+        is_free: { type: boolean, description: 是否免費, example: true }
+        location: { type: string, nullable: true, description: 服務地點, example: 光復鄉公所二樓會議室 }
         coordinates:
           type: object
           nullable: true
           properties:
-            lat: { type: number, format: double, nullable: true }
-            lng: { type: number, format: double, nullable: true }
-        status: { type: string, description: 'active, paused, ended' }
-        capacity: { type: integer, nullable: true }
-        waiting_time: { type: string, nullable: true }
-        notes: { type: string, nullable: true }
-        emergency_support: { type: boolean }
-        created_at: { type: integer, format: int64 }
-        updated_at: { type: integer, format: int64 }
+            lat: { type: number, format: double, nullable: true, description: 緯度, example: 23.6639 }
+            lng: { type: number, format: double, nullable: true, description: 經度, example: 121.4208 }
+        status: { type: string, description: '服務狀態: active=服務中, paused=暫停, ended=已結束', example: active }
+        capacity: { type: integer, nullable: true, description: 每日服務量上限, example: 20 }
+        waiting_time: { type: string, nullable: true, description: 等候時間 (即時/需預約/天數), example: 需預約 }
+        notes: { type: string, nullable: true, description: 備註, example: 提供個別諮商及團體輔導 }
+        emergency_support: { type: boolean, description: 是否提供緊急支援, example: true }
+        created_at: { type: integer, format: int64, description: 建立時間 (Unix timestamp), example: 1727664000 }
+        updated_at: { type: integer, format: int64, description: 更新時間 (Unix timestamp), example: 1727750400 }
     MentalHealthResourceCreate:
       type: object
       required: [duration_type, name, service_format, service_hours, contact_info, is_free, status, emergency_support]
       properties:
-        duration_type: { type: string }
-        name: { type: string }
-        service_format: { type: string }
-        service_hours: { type: string }
-        contact_info: { type: string }
-        website_url: { type: string, nullable: true }
-        target_audience: { type: array, items: { type: string } }
-        specialties: { type: array, items: { type: string } }
-        languages: { type: array, items: { type: string } }
-        is_free: { type: boolean }
-        location: { type: string, nullable: true }
+        duration_type: { type: string, description: 服務期間類型, example: temporary }
+        name: { type: string, description: 服務單位或計畫名稱 }
+        service_format: { type: string, description: 服務形式, example: onsite }
+        service_hours: { type: string, description: 服務時間, example: 週一至週五 09:00-17:00 }
+        contact_info: { type: string, description: 聯繫方式, example: '0800-123-456 / support@example.org' }
+        website_url: { type: string, nullable: true, description: 網址 }
+        target_audience: { type: array, items: { type: string }, description: 服務對象 }
+        specialties: { type: array, items: { type: string }, description: 專業領域 }
+        languages: { type: array, items: { type: string }, description: 提供語言服務 }
+        is_free: { type: boolean, description: 是否免費 }
+        location: { type: string, nullable: true, description: 服務地點 }
         coordinates:
           type: object
           nullable: true
           properties:
-            lat: { type: number, format: double, nullable: true }
-            lng: { type: number, format: double, nullable: true }
-        status: { type: string }
-        capacity: { type: integer, nullable: true }
-        waiting_time: { type: string, nullable: true }
-        notes: { type: string, nullable: true }
-        emergency_support: { type: boolean }
+            lat: { type: number, format: double, nullable: true, description: 緯度 }
+            lng: { type: number, format: double, nullable: true, description: 經度 }
+        status: { type: string, description: 服務狀態 }
+        capacity: { type: integer, nullable: true, description: 每日服務量上限 }
+        waiting_time: { type: string, nullable: true, description: 等候時間 }
+        notes: { type: string, nullable: true, description: 備註 }
+        emergency_support: { type: boolean, description: 是否提供緊急支援 }
     MentalHealthResourcePatch:
       type: object
       properties:
-        duration_type: { type: string }
-        name: { type: string }
-        service_format: { type: string }
-        service_hours: { type: string }
-        contact_info: { type: string }
-        website_url: { type: string, nullable: true }
-        target_audience: { type: array, items: { type: string } }
-        specialties: { type: array, items: { type: string } }
-        languages: { type: array, items: { type: string } }
-        is_free: { type: boolean }
-        location: { type: string, nullable: true }
+        duration_type: { type: string, description: 服務期間類型 }
+        name: { type: string, description: 服務單位或計畫名稱 }
+        service_format: { type: string, description: 服務形式 }
+        service_hours: { type: string, description: 服務時間 }
+        contact_info: { type: string, description: 聯繫方式 }
+        website_url: { type: string, nullable: true, description: 網址 }
+        target_audience: { type: array, items: { type: string }, description: 服務對象 }
+        specialties: { type: array, items: { type: string }, description: 專業領域 }
+        languages: { type: array, items: { type: string }, description: 提供語言服務 }
+        is_free: { type: boolean, description: 是否免費 }
+        location: { type: string, nullable: true, description: 服務地點 }
         coordinates:
           type: object
           nullable: true
           properties:
-            lat: { type: number, format: double, nullable: true }
-            lng: { type: number, format: double, nullable: true }
-        status: { type: string }
-        capacity: { type: integer, nullable: true }
-        waiting_time: { type: string, nullable: true }
-        notes: { type: string, nullable: true }
-        emergency_support: { type: boolean }
+            lat: { type: number, format: double, nullable: true, description: 緯度 }
+            lng: { type: number, format: double, nullable: true, description: 經度 }
+        status: { type: string, description: 服務狀態 }
+        capacity: { type: integer, nullable: true, description: 每日服務量上限 }
+        waiting_time: { type: string, nullable: true, description: 等候時間 }
+        notes: { type: string, nullable: true, description: 備註 }
+        emergency_support: { type: boolean, description: 是否提供緊急支援 }
     MentalHealthResourceCollection:
       allOf:
         - $ref: '#/components/schemas/CollectionBase'
