@@ -6,14 +6,27 @@ info:
     依據需求圖片實作的後端 API。提供建立物資需求、查詢需求清單、物資配送登記。
 servers:
   - url: http://localhost:8080
+    description: 本地開發
+  - url: https://guangfu250923.pttapp.cc
+    description: 線上服務 (Production)
+  - url: '{protocol}://{host}:{port}'
+    description: 自訂伺服器
+    variables:
+      protocol:
+        default: http
+        enum: [http, https]
+      host:
+        default: localhost
+      port:
+        default: '8080'
 paths:
-  /sheet/snapshot:
+  /healthz:
     get:
-      operationId: getSheetSnapshot
-      summary: 目前快取的 Google Sheet Tab 內容 (記憶體快取)
-      description: 取得後端快取的 Google Sheet 分頁資料快照（非即時抓取），用於前端顯示或除錯。
+      operationId: getHealthz
+      summary: 健康檢查
+      description: 用於健康檢查及存活探測 (liveness / readiness probe)，回傳 200 代表服務可用。
       responses:
-        '200': { description: 快取資料, content: { application/json: { schema: { $ref: '#/components/schemas/SheetSnapshot' } } } }
+        '200': { description: OK }
   /volunteer_organizations:
     get:
       operationId: listVolunteerOrgs
