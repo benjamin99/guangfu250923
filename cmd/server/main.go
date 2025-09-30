@@ -108,6 +108,8 @@ func main() {
 	r.PATCH("/restrooms/:id", h.PatchRestroom)
 	r.POST("/volunteer_organizations", h.CreateVolunteerOrg)
 	r.GET("/volunteer_organizations", h.ListVolunteerOrgs)
+	r.GET("/volunteer_organizations/:id", h.GetVolunteerOrg)
+	r.PATCH("/volunteer_organizations/:id", h.PatchVolunteerOrg)
 	// Human resources
 	r.GET("/human_resources", h.ListHumanResources)
 	r.GET("/human_resources/:id", h.GetHumanResource)

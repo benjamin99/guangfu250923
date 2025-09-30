@@ -40,6 +40,37 @@ paths:
       responses:
         '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrganization' } } } }
         '400': { description: 輸入錯誤 }
+  /volunteer_organizations/{id}:
+    get:
+      operationId: getVolunteerOrg
+      summary: 取得單一志工招募單位
+      description: 依 UUID 取得志工招募 / 協作單位資料詳情。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrganization' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchVolunteerOrg
+      summary: 更新志工招募單位 (部分欄位)
+      description: 部分更新志工招募單位欄位；未提供欄位不修改，並自動更新 last_updated。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VolunteerOrgPatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrganization' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
   /shelters:
     get:
       operationId: listShelters
@@ -761,6 +792,19 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/VolunteerOrganization' }
+    VolunteerOrgPatch:
+      type: object
+      properties:
+        registration_status: { type: string, nullable: true }
+        organization_nature: { type: string, nullable: true }
+        organization_name: { type: string, nullable: true }
+        coordinator: { type: string, nullable: true }
+        contact_info: { type: string, nullable: true }
+        registration_method: { type: string, nullable: true }
+        service_content: { type: string, nullable: true }
+        meeting_info: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        image_url: { type: string, nullable: true }
     Shelter:
       type: object
       properties:

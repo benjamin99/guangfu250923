@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"guangfu250923/internal/models"
@@ -94,4 +95,94 @@ func (h *Handler) ListVolunteerOrgs(c *gin.Context) {
 		"next":       next,
 		"previous":   prev,
 	})
+}
+
+// GetVolunteerOrg returns a single volunteer organization by id
+func (h *Handler) GetVolunteerOrg(c *gin.Context) {
+	id := c.Param("id")
+	ctx := context.Background()
+	row := h.pool.QueryRow(ctx, `select id,last_updated,registration_status,organization_nature,organization_name,coordinator,contact_info,registration_method,service_content,meeting_info,notes,image_url from volunteer_organizations where id=$1`, id)
+	var vo models.VolunteerOrganization
+	if err := row.Scan(&vo.ID, &vo.LastUpdated, &vo.RegistrationStatus, &vo.OrganizationNature, &vo.OrganizationName, &vo.Coordinator, &vo.ContactInfo, &vo.RegistrationMethod, &vo.ServiceContent, &vo.MeetingInfo, &vo.Notes, &vo.ImageURL); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	c.JSON(http.StatusOK, vo)
+}
+
+type patchVolunteerOrgInput struct {
+	RegistrationStatus *string `json:"registration_status"`
+	OrganizationNature *string `json:"organization_nature"`
+	OrganizationName   *string `json:"organization_name"`
+	Coordinator        *string `json:"coordinator"`
+	ContactInfo        *string `json:"contact_info"`
+	RegistrationMethod *string `json:"registration_method"`
+	ServiceContent     *string `json:"service_content"`
+	MeetingInfo        *string `json:"meeting_info"`
+	Notes              *string `json:"notes"`
+	ImageURL           *string `json:"image_url"`
+}
+
+// PatchVolunteerOrg partially updates a volunteer organization
+func (h *Handler) PatchVolunteerOrg(c *gin.Context) {
+	id := c.Param("id")
+	var in patchVolunteerOrgInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	setParts := []string{}
+	args := []interface{}{}
+	idx := 1
+	add := func(expr string, val interface{}) {
+		setParts = append(setParts, expr+"$"+strconv.Itoa(idx))
+		args = append(args, val)
+		idx++
+	}
+	if in.RegistrationStatus != nil {
+		add("registration_status=", *in.RegistrationStatus)
+	}
+	if in.OrganizationNature != nil {
+		add("organization_nature=", *in.OrganizationNature)
+	}
+	if in.OrganizationName != nil {
+		add("organization_name=", *in.OrganizationName)
+	}
+	if in.Coordinator != nil {
+		add("coordinator=", *in.Coordinator)
+	}
+	if in.ContactInfo != nil {
+		add("contact_info=", *in.ContactInfo)
+	}
+	if in.RegistrationMethod != nil {
+		add("registration_method=", *in.RegistrationMethod)
+	}
+	if in.ServiceContent != nil {
+		add("service_content=", *in.ServiceContent)
+	}
+	if in.MeetingInfo != nil {
+		add("meeting_info=", *in.MeetingInfo)
+	}
+	if in.Notes != nil {
+		add("notes=", *in.Notes)
+	}
+	if in.ImageURL != nil {
+		add("image_url=", *in.ImageURL)
+	}
+	if len(setParts) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields"})
+		return
+	}
+	// always bump last_updated timestamp
+	setParts = append(setParts, "last_updated=now()")
+	query := "update volunteer_organizations set " + strings.Join(setParts, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,last_updated,registration_status,organization_nature,organization_name,coordinator,contact_info,registration_method,service_content,meeting_info,notes,image_url"
+	args = append(args, id)
+	ctx := context.Background()
+	row := h.pool.QueryRow(ctx, query, args...)
+	var vo models.VolunteerOrganization
+	if err := row.Scan(&vo.ID, &vo.LastUpdated, &vo.RegistrationStatus, &vo.OrganizationNature, &vo.OrganizationName, &vo.Coordinator, &vo.ContactInfo, &vo.RegistrationMethod, &vo.ServiceContent, &vo.MeetingInfo, &vo.Notes, &vo.ImageURL); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	c.JSON(http.StatusOK, vo)
 }
