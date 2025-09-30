@@ -139,13 +139,6 @@ POST /supplies/distribute
 ## OpenAPI
 `openapi.yaml` 可匯入 Swagger UI / Redoc。
 
-## 待改進建議 (Next Steps)
-1. 使用遷移工具 (golang-migrate) 取代 runtime DDL。
-2. 新增認證 / 權限控管。
-3. 加入日誌 / 結構化 logger (zap / zerolog)。
-4. 增加測試 (目前為最小可用版本)。
-5. 分頁與篩選更多欄位。
 
 ---
 有需要再調整欄位或增加端點，歡迎提出！
-1153b88d8a795eb330a004b02c467861
