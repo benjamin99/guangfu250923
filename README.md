@@ -1,5 +1,8 @@
 # 災害物資需求後端 (Go + PostgreSQL)
 
+## 欄位需求討論
+https://github.com/carolchu1208/Hualian-Typhoon-Rescue-Site-Backend-Team
+
 本專案依照需求圖片實作：
 
 功能：
