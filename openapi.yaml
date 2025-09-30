@@ -615,6 +615,7 @@ paths:
     get:
       operationId: getSupply
       summary: 取得單一供應單
+      description: 依供應單 UUID 取得完整供應單資訊，並回傳其所有物資項目 (supplies 陣列，可能為空)。
       parameters:
         - in: path
           name: id
@@ -626,6 +627,7 @@ paths:
     patch:
       operationId: patchSupply
       summary: 更新供應單 (部分欄位)
+      description: 對供應單進行部分欄位更新；僅更新傳入的欄位 (name/address/phone/notes)。不影響其下物資項目。
       requestBody:
         required: true
         content:
@@ -669,6 +671,7 @@ paths:
     get:
       operationId: listSuppilyItems
       summary: 取得物資項目清單 (分頁)
+      description: 分頁列出所有物資項目，可用 suppily_id 過濾特定供應單；採 JSON-LD Collection 格式。
       parameters:
         - in: query
           name: suppily_id
@@ -685,6 +688,7 @@ paths:
     post:
       operationId: createSuppilyItem
       summary: 建立物資項目
+      description: 為既有供應單新增一筆物資項目；初始 recieved_count 預設為 0。
       requestBody:
         required: true
         content:
@@ -697,6 +701,7 @@ paths:
     get:
       operationId: getSuppilyItem
       summary: 取得單一物資項目
+      description: 依物資項目 UUID 取得其詳細資訊。
       parameters:
         - in: path
           name: id
@@ -708,6 +713,7 @@ paths:
     patch:
       operationId: patchSuppilyItem
       summary: 更新物資項目 (部分欄位)
+      description: 部分更新物資項目欄位；若更新 recieved_count 則不得超過 total_count。
       requestBody:
         required: true
         content:
@@ -724,29 +730,6 @@ paths:
         '404': { description: 找不到 }
 components:
   schemas:
-    DistributionInput:
-      type: object
-      required: [id, count]
-      properties:
-        id: { type: string, format: uuid, description: suppily_item ID }
-        count: { type: integer, minimum: 1, description: 本次配送新增數量 }
-    SupplyItem:
-      allOf: [{ $ref: '#/components/schemas/SuppilyItem' }]
-    SuppliesOverviewCollection:
-      allOf:
-        - $ref: '#/components/schemas/CollectionBase'
-        - type: object
-          properties:
-            member:
-              type: array
-              items:
-                type: object
-                properties:
-                  request_id: { type: string, format: uuid }
-                  total_items: { type: integer }
-                  completed_items: { type: integer }
-                  pending_items: { type: integer }
-                  progress: { type: number, format: float }
     CollectionBase:
       type: object
       properties:
