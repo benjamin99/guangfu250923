@@ -1395,34 +1395,118 @@ components:
     Restroom:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        name: { type: string }
-        address: { type: string }
-        phone: { type: string, nullable: true }
-        facility_type: { type: string }
-        opening_hours: { type: string }
-        is_free: { type: boolean }
-        male_units: { type: integer, nullable: true }
-        female_units: { type: integer, nullable: true }
-        unisex_units: { type: integer, nullable: true }
-        accessible_units: { type: integer, nullable: true }
-        has_water: { type: boolean }
-        has_lighting: { type: boolean }
-        status: { type: string }
-        cleanliness: { type: string, nullable: true }
-        last_cleaned: { type: integer, format: int64, nullable: true }
-        facilities: { type: array, items: { type: string } }
-        distance_to_disaster_area: { type: string, nullable: true }
-        notes: { type: string, nullable: true }
-        info_source: { type: string, nullable: true }
+        id:
+          type: string
+          format: uuid
+          description: 廁所點唯一識別碼
+          example: 123e4567-e89b-12d3-a456-426614174000
+          readOnly: true
+        name:
+          type: string
+          description: 地點名稱
+          example: 光復國小臨時廁所
+        address:
+          type: string
+          description: 地址
+          example: 花蓮縣光復鄉中山路三段75號
+        phone:
+          type: string
+          nullable: true
+          description: 聯絡電話
+          example: 03-8701129
+        facility_type:
+          type: string
+          description: 設施類型 (mobile_toilet, permanent_toilet, public_restroom)
+          example: mobile_toilet
+        opening_hours:
+          type: string
+          description: 開放時間
+          example: 24小時
+        is_free:
+          type: boolean
+          description: 是否免費
+          example: true
+        male_units:
+          type: integer
+          nullable: true
+          description: 男廁數量
+          example: 3
+        female_units:
+          type: integer
+          nullable: true
+          description: 女廁數量
+          example: 5
+        unisex_units:
+          type: integer
+          nullable: true
+          description: 無性別廁所數量
+          example: 2
+        accessible_units:
+          type: integer
+          nullable: true
+          description: 無障礙廁所數量
+          example: 1
+        has_water:
+          type: boolean
+          description: 是否有供水
+          example: true
+        has_lighting:
+          type: boolean
+          description: 是否有照明
+          example: true
+        status:
+          type: string
+          description: 營運狀態 (active, maintenance, out_of_service)
+          example: active
+        cleanliness:
+          type: string
+          nullable: true
+          description: 清潔狀態 (clean, needs_cleaning, under_cleaning)
+          example: clean
+        last_cleaned:
+          type: integer
+          format: int64
+          nullable: true
+          description: 最後清潔時間 (Unix timestamp 秒)
+          example: 1727664000
+        facilities:
+          type: array
+          description: 額外設施
+          items: { type: string }
+          example: ["洗手台","衛生紙","洗手乳","烘手機"]
+        distance_to_disaster_area:
+          type: string
+          nullable: true
+          description: 距災區距離
+          example: 5分鐘步行
+        notes:
+          type: string
+          nullable: true
+          description: 備註
+          example: 定時清潔，請保持整潔
+        info_source:
+          type: string
+          nullable: true
+          description: 資料來源
+          example: 環保局
         coordinates:
           type: object
           nullable: true
           properties:
             lat: { type: number, format: double, nullable: true }
             lng: { type: number, format: double, nullable: true }
-        created_at: { type: integer, format: int64 }
-        updated_at: { type: integer, format: int64 }
+        created_at:
+          type: integer
+          format: int64
+          description: 建立時間 (Unix timestamp 秒)
+          example: 1727664000
+          readOnly: true
+        updated_at:
+          type: integer
+          format: int64
+          description: 更新時間 (Unix timestamp 秒)
+          example: 1727750400
+          readOnly: true
     RestroomCreate:
       type: object
       required: [name, address, facility_type, opening_hours, is_free, has_water, has_lighting, status]
