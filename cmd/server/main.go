@@ -48,7 +48,10 @@ func main() {
 		AllowCredentials: false,
 		MaxAge:           43200 * time.Second, // 12h
 	}))
+	// Request logging (after CORS so preflight OPTIONS not fully logged body wise)
 	r.Use(middleware.RequestLogger(pool, 0))
+	// Cache headers for GET responses
+	r.Use(middleware.CacheHeaders(0))
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
 	// Sheet cache

@@ -291,8 +291,17 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             status_code int,
             error text,
             duration_ms int,
+        request_body jsonb,
+        original_data jsonb,
+        result_data jsonb,
+        resource_id uuid,
             created_at timestamptz not null default now()
         )`,
+		// Add new columns if migrating from older version
+		`alter table request_logs add column if not exists request_body jsonb`,
+		`alter table request_logs add column if not exists original_data jsonb`,
+		`alter table request_logs add column if not exists result_data jsonb`,
+		`alter table request_logs add column if not exists resource_id uuid`,
 		`create index if not exists idx_request_logs_created_at on request_logs(created_at)`,
 		`create index if not exists idx_request_logs_status_code on request_logs(status_code)`,
 	}
