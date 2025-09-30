@@ -250,7 +250,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_water_refill_water_type on water_refill_stations(water_type)`,
 		`create index if not exists idx_water_refill_is_free on water_refill_stations(is_free)`,
 		`create index if not exists idx_water_refill_accessibility on water_refill_stations(accessibility)`,
-        `create table if not exists restrooms (
+		`create table if not exists restrooms (
             id uuid primary key default gen_random_uuid(),
             name text not null,
             address text not null,
@@ -276,7 +276,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,
-        `create table if not exists human_resources (
+		`create table if not exists human_resources (
             id text primary key,
             org text not null,
             address text not null,
@@ -315,14 +315,14 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             urgent_requests int,
             medical_requests int
         )`,
-        `create index if not exists idx_human_resources_status on human_resources(status)`,
-        `create index if not exists idx_human_resources_role_status on human_resources(role_status)`,
+		`create index if not exists idx_human_resources_status on human_resources(status)`,
+		`create index if not exists idx_human_resources_role_status on human_resources(role_status)`,
 		`create index if not exists idx_restrooms_status on restrooms(status)`,
 		`create index if not exists idx_restrooms_facility_type on restrooms(facility_type)`,
 		`create index if not exists idx_restrooms_is_free on restrooms(is_free)`,
 		`create index if not exists idx_restrooms_has_water on restrooms(has_water)`,
 		`create index if not exists idx_restrooms_has_lighting on restrooms(has_lighting)`,
-        `create table if not exists request_logs (
+		`create table if not exists request_logs (
             id uuid primary key default gen_random_uuid(),
             method text not null,
             path text not null,
@@ -338,8 +338,8 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             resource_id uuid,
             created_at timestamptz not null default now()
         )`,
-        // New simplified supplies domain (replaces legacy requests/supply_items usage)
-        `create table if not exists supplies (
+		// New simplified supplies domain (replaces legacy requests/supply_items usage)
+		`create table if not exists supplies (
             id uuid primary key default gen_random_uuid(),
             name text,
             address text,
@@ -348,9 +348,9 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,
-        `create index if not exists idx_supplies_updated_at on supplies(updated_at)`,
-        /* NOTE: Naming kept as 'suppily_items' per user specification (possible typo of supply_items) */
-        `create table if not exists suppily_items (
+		`create index if not exists idx_supplies_updated_at on supplies(updated_at)`,
+		/* NOTE: Naming kept as 'suppily_items' per user specification (possible typo of supply_items) */
+		`create table if not exists suppily_items (
             id uuid primary key default gen_random_uuid(),
             suppily_id uuid not null references supplies(id) on delete cascade,
             tag text,
@@ -360,7 +360,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             unit text,
             constraint chk_suppily_items_received_le_total check (received_count <= total_number)
         )`,
-        `create index if not exists idx_suppily_items_supply_id on suppily_items(suppily_id)`,
+		`create index if not exists idx_suppily_items_supply_id on suppily_items(suppily_id)`,
 		// Add new columns if migrating from older version
 		`alter table request_logs add column if not exists request_body jsonb`,
 		`alter table request_logs add column if not exists original_data jsonb`,
