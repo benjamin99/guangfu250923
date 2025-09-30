@@ -1355,9 +1355,9 @@ components:
       properties:
         id: { type: string, format: uuid }
         code: { type: string }
-        name: { type: string }
-        address: { type: string }
-        phone: { type: string }
+        name: { type: string, description: 需救援的單位名字 }
+        address: { type: string, description: 需救援的單位地址 }
+        phone: { type: string, description: 需救援的單位電話 }
         contact: { type: string }
         status: { type: string }
         needed_people: { type: integer }
@@ -1603,11 +1603,11 @@ components:
       type: object
       required: [name, total_count, unit]
       properties:
-        tag: { type: string, description: "物資種類: food / medical / daily / equipment / other", enum: [food, medical, daily, equipment, other] }
-        name: { type: string }
-        total_count: { type: integer }
-        received_count: { type: integer, default: 0, description: '已取得數量' }
-        unit: { type: string }
+        tag: { type: string, description: "物資種類: food: 飲食 / medical: 醫療 / daily: 生活用品 / equipment: 大型機具 / other: 其他", enum: [food, medical, daily, equipment, other] }
+        name: { type: string, description: '物資名稱' }
+        total_count: { type: integer, description: '總共所需的物資數量' }
+        received_count: { type: integer, default: 0, description: '已取得的物資數量' }
+        unit: { type: string, description: '物資的單位，ex:箱' }
     SupplyItem:
       allOf:
         - $ref: '#/components/schemas/SupplyItemCreate'
