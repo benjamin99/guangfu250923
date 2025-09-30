@@ -14,6 +14,7 @@ import (
 type distributionInput struct {
 	ID    string `json:"id" binding:"required"`
 	Count int    `json:"count" binding:"required"`
+	Notes string `json:"notes"`
 }
 
 func (h *Handler) DistributeSupplies(c *gin.Context) {
@@ -57,6 +58,11 @@ func (h *Handler) DistributeSupplies(c *gin.Context) {
 		}
 		s.ReceivedCount += in.Count
 		_, err = tx.Exec(ctx, `update supply_items set received_count=$1 where id=$2`, s.ReceivedCount, s.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		_, err = tx.Exec(ctx, `insert into delivery_records(supply_item_id,quantity,notes) values($1,$2,$3)`, s.ID, in.Count, in.Notes)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

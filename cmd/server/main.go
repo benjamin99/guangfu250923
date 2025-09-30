@@ -10,6 +10,7 @@ import (
 	"guangfu250923/internal/config"
 	"guangfu250923/internal/db"
 	"guangfu250923/internal/handlers"
+	"guangfu250923/internal/sheetcache"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,11 +34,25 @@ func main() {
 	r := gin.Default()
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
+	// Sheet cache
+	sheetCache := sheetcache.New(cfg.SheetID, cfg.SheetTab)
+	pollCtx, cancelPoll := context.WithCancel(context.Background())
+	defer cancelPoll()
+	sheetCache.StartPolling(pollCtx, cfg.SheetInterval)
+	r.GET("/sheet/snapshot", func(c *gin.Context) { c.JSON(http.StatusOK, sheetCache.Snapshot()) })
+
 	h := handlers.New(pool)
 	r.POST("/requests", h.CreateRequest)
 	r.GET("/requests", h.ListRequests)
 	r.POST("/supplies/distribute", h.DistributeSupplies)
 	r.GET("/supplies", h.ListSupplies)
+	r.GET("/supplies_overview", h.ListSuppliesOverview)
+	r.POST("/shelters", h.CreateShelter)
+	r.GET("/shelters", h.ListShelters)
+	r.GET("/shelters/:id", h.GetShelter)
+	r.PATCH("/shelters/:id", h.PatchShelter)
+	r.POST("/volunteer_organizations", h.CreateVolunteerOrg)
+	r.GET("/volunteer_organizations", h.ListVolunteerOrgs)
 
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: r}
 	log.Printf("server listening on :%s", cfg.Port)

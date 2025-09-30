@@ -101,6 +101,7 @@ func (h *Handler) CreateRequest(c *gin.Context) {
 		Lat:          in.Lat,
 		MapLink:      in.MapLink,
 		CreatedAt:    createdAt,
+		Time:         createdAt,
 		Supplies:     supplies,
 	}
 	c.JSON(http.StatusCreated, out)

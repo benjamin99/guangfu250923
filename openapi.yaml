@@ -96,6 +96,134 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SupplyCollection'
+  /sheet/snapshot:
+    get:
+      summary: 目前快取的 Google Sheet Tab 內容 (記憶體快取)
+      responses:
+        '200':
+          description: 快取資料
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SheetSnapshot'
+  /volunteer_organizations:
+    get:
+      summary: 取得志工招募單位清單 (分頁)
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolunteerOrgCollection'
+    post:
+      summary: 建立志工招募單位
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VolunteerOrgCreate'
+      responses:
+        '201':
+          description: 建立成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolunteerOrganization'
+        '400': { description: 輸入錯誤 }
+  /supplies_overview:
+    get:
+      summary: 供應需求整合清單 (含彙總欄位) 分頁
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+          description: 過濾需求狀態
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuppliesOverviewCollection'
+  /shelters:
+    get:
+      summary: 取得庇護所清單 (分頁)
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShelterCollection'
+    post:
+      summary: 建立庇護所
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShelterCreate'
+      responses:
+        '201':
+          description: 建立成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shelter'
+        '400': { description: 輸入錯誤 }
+  /shelters/{id}:
+    get:
+      summary: 取得單一庇護所
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+        '404': { description: 找不到 }
+    patch:
+      summary: 更新庇護所 (部分欄位)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShelterPatch'
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
 components:
   schemas:
     CollectionBase:
@@ -124,6 +252,171 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/SupplyItem' }
+    SheetSnapshot:
+      type: object
+      properties:
+        updated: { type: string, format: date-time }
+        headers: { type: array, items: { type: string } }
+        rows:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: { type: string }
+    VolunteerOrganization:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        last_updated: { type: string, format: date-time }
+        registration_status: { type: string }
+        organization_nature: { type: string }
+        organization_name: { type: string }
+        coordinator: { type: string }
+        contact_info: { type: string }
+        registration_method: { type: string }
+        service_content: { type: string }
+        meeting_info: { type: string }
+        notes: { type: string }
+        image_url: { type: string, nullable: true }
+    VolunteerOrgCreate:
+      type: object
+      required: [organization_name]
+      properties:
+        registration_status: { type: string }
+        organization_nature: { type: string }
+        organization_name: { type: string }
+        coordinator: { type: string }
+        contact_info: { type: string }
+        registration_method: { type: string }
+        service_content: { type: string }
+        meeting_info: { type: string }
+        notes: { type: string }
+        image_url: { type: string, nullable: true }
+    VolunteerOrgCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/VolunteerOrganization' }
+    SuppliesOverview:
+      type: object
+      properties:
+        item_id: { type: string }
+        request_id: { type: string }
+        org: { type: string }
+        address: { type: string }
+        phone: { type: string }
+        status: { type: string }
+        is_completed: { type: boolean }
+        has_medical: { type: boolean }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+        item_name: { type: string }
+        item_type: { type: string }
+        item_need: { type: integer }
+        item_got: { type: integer }
+        item_unit: { type: string }
+        item_status: { type: string }
+        delivery_id: { type: string, nullable: true }
+        delivery_timestamp: { type: integer, format: int64, nullable: true }
+        delivery_quantity: { type: integer, nullable: true }
+        delivery_notes: { type: string, nullable: true }
+        total_items_in_request: { type: integer }
+        completed_items_in_request: { type: integer }
+        pending_items_in_request: { type: integer }
+        total_requests: { type: integer }
+        active_requests: { type: integer }
+        completed_requests: { type: integer }
+        cancelled_requests: { type: integer }
+        total_items: { type: integer }
+        completed_items: { type: integer }
+        pending_items: { type: integer }
+        urgent_requests: { type: integer }
+        medical_requests: { type: integer }
+    SuppliesOverviewCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/SuppliesOverview' }
+    Shelter:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        location: { type: string }
+        phone: { type: string }
+        link: { type: string, nullable: true }
+        status: { type: string, description: 'open, full, closed, temporary_closed' }
+        capacity: { type: integer, nullable: true }
+        current_occupancy: { type: integer, nullable: true }
+        available_spaces: { type: integer, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        contact_person: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        opening_hours: { type: string, nullable: true }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+    ShelterCreate:
+      type: object
+      required: [name, location, phone, status]
+      properties:
+        name: { type: string }
+        location: { type: string }
+        phone: { type: string }
+        link: { type: string, nullable: true }
+        status: { type: string }
+        capacity: { type: integer, nullable: true }
+        current_occupancy: { type: integer, nullable: true }
+        available_spaces: { type: integer, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        contact_person: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        opening_hours: { type: string, nullable: true }
+    ShelterPatch:
+      type: object
+      properties:
+        name: { type: string }
+        location: { type: string }
+        phone: { type: string }
+        link: { type: string, nullable: true }
+        status: { type: string }
+        capacity: { type: integer, nullable: true }
+        current_occupancy: { type: integer, nullable: true }
+        available_spaces: { type: integer, nullable: true }
+        facilities: { type: array, items: { type: string } }
+        contact_person: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        coordinates:
+          type: object
+          nullable: true
+          properties:
+            lat: { type: number, format: double, nullable: true }
+            lng: { type: number, format: double, nullable: true }
+        opening_hours: { type: string, nullable: true }
+    ShelterCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/Shelter' }
     CreateRequestInput:
       type: object
       required: [name]
@@ -165,6 +458,7 @@ components:
         lat: { type: number, format: double }
         map_link: { type: string }
         created_at: { type: integer, format: int64, description: Unix timestamp (sec) }
+        time: { type: integer, format: int64, description: 與 created_at 同值 (別名) }
         supplies:
           type: array
           items:
@@ -176,7 +470,7 @@ components:
         tag: { type: string, description: 物資種類: food/medical/daily/equipment/other }
         name: { type: string }
         total_count: { type: integer }
-        received_count: { type: integer, default: 0 }
+        received_count: { type: integer, default: 0, description: '已取得數量' }
         unit: { type: string }
     SupplyItem:
       allOf:
@@ -187,7 +481,6 @@ components:
             request_id: { type: string, format: uuid }
     DistributionInput:
       type: object
-      required: [id, count]
       properties:
         id: { type: string, format: uuid }
         count: { type: integer, minimum: 1 }
