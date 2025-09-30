@@ -13,6 +13,7 @@ import (
 	"guangfu250923/internal/middleware"
 	"guangfu250923/internal/sheetcache"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,6 +34,20 @@ func main() {
 	}
 
 	r := gin.Default()
+	// CORS configuration: allow specified front-end origins
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{
+			"*",
+			"http://localhost:5050",
+			"http://127.0.0.1:5050",
+			"https://sites.google.com/view/guangfu250923",
+		},
+		AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: false,
+		MaxAge:           43200 * time.Second, // 12h
+	}))
 	r.Use(middleware.RequestLogger(pool, 0))
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
