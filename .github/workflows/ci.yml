@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop, feature/** ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Vet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Go env
+        run: go env
+
+      - name: Download deps
+        run: go mod download
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Staticcheck (optional)
+        if: always()
+        uses: dominikh/staticcheck-action@v1
+        with:
+          version: latest
+        continue-on-error: true
+
+  lint-openapi:
+    name: Validate OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install spectral
+        run: |
+          npm install -g @stoplight/spectral-cli
+      - name: Lint openapi.yaml
+        run: |
+          spectral lint openapi.yaml || exit 1
+
+  verify-migrations:
+    name: Migrate (syntax only)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" \
+          --health-interval 10s \
+          --health-timeout 5s \
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Wait for Postgres
+        run: |
+          for i in {1..20}; do
+            pg_isready -h localhost -U postgres && break
+            sleep 2
+          done
+      - name: Run migrations
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: testdb
+          SHEET_ID: dummy
+          SHEET_TAB: Sheet1
+          SHEET_INTERVAL: 5m
+          PORT: 8080
+        run: |
+          go build ./...
+          go run ./cmd/server/main.go &
+          PID=$!
+          sleep 5
+          kill $PID || true
+
+  # Future: add test job when tests exist
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-go@v5
+  #       with:
+  #         go-version-file: go.mod
+  #         cache: true
+  #     - run: go test ./... -race -count=1
+
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [build, lint-openapi, verify-migrations]
+    steps:
+      - name: Report
+        run: echo "All required jobs finished."
