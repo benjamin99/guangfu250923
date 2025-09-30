@@ -1139,37 +1139,115 @@ components:
     ShowerStation:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        name: { type: string }
-        address: { type: string }
-        phone: { type: string, nullable: true }
-        facility_type: { type: string, description: 'mobile_shower, coin_operated, regular_bathroom' }
-        time_slots: { type: string }
+        id:
+          type: string
+          format: uuid
+          description: 洗澡點唯一識別碼
+          example: 123e4567-e89b-12d3-a456-426614174002
+          readOnly: true
+        name:
+          type: string
+          description: 名稱
+          example: 光復國小
+        address:
+          type: string
+          description: 地址
+          example: 花蓮縣光復鄉中山路三段75號
+        phone:
+          type: string
+          nullable: true
+          description: 聯絡電話
+          example: 03-8702880
+        facility_type:
+          type: string
+          description: 設施類型 (mobile_shower, coin_operated, regular_bathroom)
+          example: mobile_shower
+        time_slots:
+          type: string
+          description: 提供洗澡的時段 (可為多段，以逗號或換行分隔)
+          example: 上午10:00-11:30, 下午15:30-17:30
         gender_schedule:
           type: object
           nullable: true
+          description: 性別使用時段 (male / female 對應陣列時段)
           properties:
-            male: { type: array, items: { type: string } }
-            female: { type: array, items: { type: string } }
-        available_period: { type: string }
-        capacity: { type: integer, nullable: true }
-        is_free: { type: boolean }
-        pricing: { type: string, nullable: true }
-        notes: { type: string, nullable: true }
-        info_source: { type: string, nullable: true }
-        status: { type: string, description: 'active, temporarily_closed, ended' }
-        facilities: { type: array, items: { type: string } }
-        distance_to_guangfu: { type: string, nullable: true }
-        requires_appointment: { type: boolean }
-        contact_method: { type: string, nullable: true }
+            male:
+              type: array
+              items: { type: string }
+              example: ["10:00-10:30"]
+            female:
+              type: array
+              items: { type: string }
+              example: ["10:30-11:30"]
+        available_period:
+          type: string
+          description: 開放期間
+          example: 即日起至10/3
+        capacity:
+          type: integer
+          nullable: true
+          description: 同時可容納人數
+          example: 5
+        is_free:
+          type: boolean
+          description: 是否免費
+          example: true
+        pricing:
+          type: string
+          nullable: true
+          description: 費用說明
+          example: 投幣式，每次10元
+        notes:
+          type: string
+          nullable: true
+          description: 備註
+          example: 多座行動沐浴車，僅開放廁所+浴室
+        info_source:
+          type: string
+          nullable: true
+          description: 資料來源
+          example: https://example.com/post/123
+        status:
+          type: string
+          description: 營運狀態 (active, temporarily_closed, ended)
+          example: active
+        facilities:
+          type: array
+          items: { type: string }
+          description: 額外設施
+          example: ["吹風機","毛巾","盥洗用品"]
+        distance_to_guangfu:
+          type: string
+          nullable: true
+          description: 距光復車程
+          example: 20分鐘
+        requires_appointment:
+          type: boolean
+          description: 是否需預約
+          example: false
+        contact_method:
+          type: string
+          nullable: true
+          description: 預約方式
+          example: "LINE: @wowhostel"
         coordinates:
           type: object
           nullable: true
           properties:
             lat: { type: number, format: double, nullable: true }
             lng: { type: number, format: double, nullable: true }
-        created_at: { type: integer, format: int64 }
-        updated_at: { type: integer, format: int64 }
+        created_at:
+          type: integer
+          format: int64
+          description: 建立時間 (Unix timestamp 秒)
+          example: 1727664000
+          readOnly: true
+        updated_at:
+          type: integer
+          format: int64
+          description: 更新時間 (Unix timestamp 秒)
+          example: 1727750400
+          readOnly: true
     ShowerStationCreate:
       type: object
       required: [name, address, facility_type, time_slots, available_period, is_free, status, requires_appointment]
