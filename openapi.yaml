@@ -6,53 +6,6 @@ info:
     依據需求圖片實作的後端 API。提供建立物資需求、查詢需求清單、物資配送登記。
 servers:
   - url: http://localhost:8080
-    description: 本地開發
-  - url: https://guangfu250923.pttapp.cc
-    description: 線上服務 (Production)
-  - url: '{protocol}://{host}:{port}'
-    description: 自訂伺服器
-    variables:
-      protocol:
-        default: http
-        enum: [http, https]
-      host:
-        default: localhost
-      port:
-        default: '8080'
-paths:
-  /healthz:
-    get:
-      operationId: getHealthz
-      summary: 健康檢查
-      description: 用於健康檢查及存活探測 (liveness / readiness probe)，回傳 200 代表服務可用。
-      responses:
-        '200': { description: OK }
-  /requests:
-    get:
-      operationId: listRequests
-      summary: 取得需求清單
-      description: 以分頁方式列出所有物資需求，可依狀態過濾；結果包含需求下的物資項目摘要。
-      parameters:
-        - in: query
-          name: status
-          schema: { type: string, enum: [pending, partial, fulfilled, closed] }
-          description: 過濾狀態
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
-      responses:
-        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequestCollection' } } } }
-    post:
-      operationId: createRequest
-      summary: 新增物資需求
-      description: 建立一筆新的物資需求主檔，並可後續透過 /supplies 建立細項物資。
-      requestBody:
-        required: true
-        content:
-          application/json:
             schema: { $ref: '#/components/schemas/CreateRequestInput' }
       responses:
         '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Request' } } } }
@@ -697,22 +650,6 @@ components:
         offset: { type: integer }
         next: { type: string, nullable: true }
         previous: { type: string, nullable: true }
-    RequestCollection:
-      allOf:
-        - $ref: '#/components/schemas/CollectionBase'
-        - type: object
-          properties:
-            member:
-              type: array
-              items: { $ref: '#/components/schemas/Request' }
-    SupplyCollection:
-      allOf:
-        - $ref: '#/components/schemas/CollectionBase'
-        - type: object
-          properties:
-            member:
-              type: array
-              items: { $ref: '#/components/schemas/SupplyItem' }
     SheetSnapshot:
       type: object
       properties:
@@ -760,49 +697,6 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/VolunteerOrganization' }
-    SuppliesOverview:
-      type: object
-      properties:
-        item_id: { type: string }
-        request_id: { type: string }
-        org: { type: string }
-        address: { type: string }
-        phone: { type: string }
-        status: { type: string }
-        is_completed: { type: boolean }
-        has_medical: { type: boolean }
-        created_at: { type: integer, format: int64 }
-        updated_at: { type: integer, format: int64 }
-        item_name: { type: string }
-        item_type: { type: string }
-        item_need: { type: integer }
-        item_got: { type: integer }
-        item_unit: { type: string }
-        item_status: { type: string }
-        delivery_id: { type: string, nullable: true }
-        delivery_timestamp: { type: integer, format: int64, nullable: true }
-        delivery_quantity: { type: integer, nullable: true }
-        delivery_notes: { type: string, nullable: true }
-        total_items_in_request: { type: integer }
-        completed_items_in_request: { type: integer }
-        pending_items_in_request: { type: integer }
-        total_requests: { type: integer }
-        active_requests: { type: integer }
-        completed_requests: { type: integer }
-        cancelled_requests: { type: integer }
-        total_items: { type: integer }
-        completed_items: { type: integer }
-        pending_items: { type: integer }
-        urgent_requests: { type: integer }
-        medical_requests: { type: integer }
-    SuppliesOverviewCollection:
-      allOf:
-        - $ref: '#/components/schemas/CollectionBase'
-        - type: object
-          properties:
-            member:
-              type: array
-              items: { $ref: '#/components/schemas/SuppliesOverview' }
     Shelter:
       type: object
       properties:
@@ -1471,52 +1365,6 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/WaterRefillStation' }
-    CreateRequestInput:
-      type: object
-      required: [name]
-      properties:
-        code: { type: string, description: 站點代碼/名稱 }
-        name: { type: string, description: 需救援的單位名字 }
-        address: { type: string }
-        phone: { type: string }
-        contact: { type: string }
-        status:
-          type: string
-          enum: [pending, partial, fulfilled, closed]
-          default: pending
-        needed_people: { type: integer, format: int32 }
-        notes: { type: string }
-        lng: { type: number, format: double }
-        lat: { type: number, format: double }
-        map_link: { type: string }
-        supplies:
-          description: 可為單一物件或陣列
-          oneOf:
-            - $ref: '#/components/schemas/SupplyItemCreate'
-            - type: array
-              items:
-                $ref: '#/components/schemas/SupplyItemCreate'
-    Request:
-      type: object
-      properties:
-        id: { type: string, format: uuid }
-        code: { type: string }
-        name: { type: string, description: 需救援的單位名字 }
-        address: { type: string, description: 需救援的單位地址 }
-        phone: { type: string, description: 需救援的單位電話 }
-        contact: { type: string }
-        status: { type: string }
-        needed_people: { type: integer }
-        notes: { type: string }
-        lng: { type: number, format: double }
-        lat: { type: number, format: double }
-        map_link: { type: string }
-        created_at: { type: integer, format: int64, description: Unix timestamp (sec) }
-        time: { type: integer, format: int64, description: 與 created_at 同值 (別名) }
-        supplies:
-          type: array
-          items:
-            $ref: '#/components/schemas/SupplyItem'
     RequestLog:
       type: object
       properties:
@@ -1984,24 +1832,3 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/HumanResource' }
-    SupplyItemCreate:
-      type: object
-      required: [name, total_count, unit]
-      properties:
-        tag: { type: string, description: "物資種類: food: 飲食 / medical: 醫療 / daily: 生活用品 / equipment: 大型機具 / other: 其他", enum: [food, medical, daily, equipment, other] }
-        name: { type: string, description: '物資名稱' }
-        total_count: { type: integer, description: '總共所需的物資數量' }
-        received_count: { type: integer, default: 0, description: '已取得的物資數量' }
-        unit: { type: string, description: '物資的單位，ex:箱' }
-    SupplyItem:
-      allOf:
-        - $ref: '#/components/schemas/SupplyItemCreate'
-        - type: object
-          properties:
-            id: { type: string, format: uuid }
-            request_id: { type: string, format: uuid }
-    DistributionInput:
-      type: object
-      properties:
-        id: { type: string, format: uuid }
-        count: { type: integer, minimum: 1 }

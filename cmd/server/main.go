@@ -75,11 +75,7 @@ func main() {
 	r.GET("/sheet/snapshot", func(c *gin.Context) { c.JSON(http.StatusOK, sheetCache.Snapshot()) })
 
 	h := handlers.New(pool)
-	r.POST("/requests", h.CreateRequest)
-	r.GET("/requests", h.ListRequests)
-	r.POST("/supplies/distribute", h.DistributeSupplies)
-	r.GET("/supplies", h.ListSupplies)
-	r.GET("/supplies_overview", h.ListSuppliesOverview)
+	// Removed legacy requests & supplies overview endpoints
 	r.POST("/shelters", h.CreateShelter)
 	r.GET("/shelters", h.ListShelters)
 	r.GET("/shelters/:id", h.GetShelter)
