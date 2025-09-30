@@ -114,6 +114,16 @@ func main() {
 	r.GET("/human_resources/:id", h.GetHumanResource)
 	r.POST("/human_resources", h.CreateHumanResource)
 	r.PATCH("/human_resources/:id", h.PatchHumanResource)
+	// Supplies (new domain) & suppily items
+	r.POST("/supplies", h.CreateSupply)
+	r.GET("/supplies", h.ListSupplies)
+	r.GET("/supplies/:id", h.GetSupply)
+	r.PATCH("/supplies/:id", h.PatchSupply)
+	r.POST("/supplies/:id", h.DistributeSupplyItems) // 批次配送 (累加 recieved_count)
+	r.POST("/suppily_items", h.CreateSuppilyItem)
+	r.GET("/suppily_items", h.ListSuppilyItems)
+	r.GET("/suppily_items/:id", h.GetSuppilyItem)
+	r.PATCH("/suppily_items/:id", h.PatchSuppilyItem)
 	// Admin: request logs
 	r.GET("/_admin/request_logs", h.ListRequestLogs)
 

@@ -338,6 +338,29 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             resource_id uuid,
             created_at timestamptz not null default now()
         )`,
+        // New simplified supplies domain (replaces legacy requests/supply_items usage)
+        `create table if not exists supplies (
+            id uuid primary key default gen_random_uuid(),
+            name text,
+            address text,
+            phone text,
+            notes text,
+            created_at timestamptz not null default now(),
+            updated_at timestamptz not null default now()
+        )`,
+        `create index if not exists idx_supplies_updated_at on supplies(updated_at)`,
+        /* NOTE: Naming kept as 'suppily_items' per user specification (possible typo of supply_items) */
+        `create table if not exists suppily_items (
+            id uuid primary key default gen_random_uuid(),
+            suppily_id uuid not null references supplies(id) on delete cascade,
+            tag text,
+            name text,
+            received_count int not null default 0,
+            total_number int not null,
+            unit text,
+            constraint chk_suppily_items_received_le_total check (received_count <= total_number)
+        )`,
+        `create index if not exists idx_suppily_items_supply_id on suppily_items(suppily_id)`,
 		// Add new columns if migrating from older version
 		`alter table request_logs add column if not exists request_body jsonb`,
 		`alter table request_logs add column if not exists original_data jsonb`,

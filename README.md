@@ -137,7 +137,7 @@ POST /supplies/distribute
   {"id":"<另一個>", "count":5}
 ]
 ```
-會將 `received_count` 累加；若超過 `total_count` 會回 400。
+會將 `recieved_count` 累加；若超過 `total_count` 會回 400。
 
 ## OpenAPI
 `openapi.yaml` 可匯入 Swagger UI / Redoc。

@@ -248,3 +248,25 @@ type HumanResource struct {
 	UrgentRequests          *int     `json:"urgent_requests"`
 	MedicalRequests         *int     `json:"medical_requests"`
 }
+
+// Supply represents supplies table row
+type Supply struct {
+	ID        string  `json:"id"`
+	Name      *string `json:"name"`
+	Address   *string `json:"address"`
+	Phone     *string `json:"phone"`
+	Notes     *string `json:"notes"`
+	CreatedAt int64   `json:"created_at"`
+	UpdatedAt int64   `json:"updated_at"`
+}
+
+// SuppilyItem represents suppily_items table row (intentional naming per spec)
+type SuppilyItem struct {
+	ID            string  `json:"id"`
+	SuppilyID     string  `json:"suppily_id"`
+	Tag           *string `json:"tag"`
+	Name          *string `json:"name"`
+	ReceivedCount int     `json:"recieved_count"`
+	TotalCount    int     `json:"total_count"`
+	Unit          *string `json:"unit"`
+}
