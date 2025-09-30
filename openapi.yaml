@@ -11,12 +11,14 @@ paths:
     get:
       operationId: getHealthz
       summary: 健康檢查
+      description: 用於健康檢查及存活探測 (liveness / readiness probe)，回傳 200 代表服務可用。
       responses:
         '200': { description: OK }
   /requests:
     get:
       operationId: listRequests
       summary: 取得需求清單
+      description: 以分頁方式列出所有物資需求，可依狀態過濾；結果包含需求下的物資項目摘要。
       parameters:
         - in: query
           name: status
@@ -33,6 +35,7 @@ paths:
     post:
       operationId: createRequest
       summary: 新增物資需求
+      description: 建立一筆新的物資需求主檔，並可後續透過 /supplies 建立細項物資。
       requestBody:
         required: true
         content:
@@ -45,6 +48,7 @@ paths:
     post:
       operationId: distributeSupplies
       summary: 物資配送 (累加 received_count)
+      description: 批次更新多個物資項目的已取得數量 (received_count)，用於紀錄實際配送或捐贈到貨。
       requestBody:
         required: true
         content:
@@ -59,6 +63,7 @@ paths:
     get:
       operationId: listSupplies
       summary: 取得所有物資清單 (扁平) 分頁
+      description: 以扁平結構列出所有物資項目，支援依需求編號過濾並提供分頁資訊。
       parameters:
         - in: query
           name: request_id
@@ -76,12 +81,14 @@ paths:
     get:
       operationId: getSheetSnapshot
       summary: 目前快取的 Google Sheet Tab 內容 (記憶體快取)
+      description: 取得後端快取的 Google Sheet 分頁資料快照（非即時抓取），用於前端顯示或除錯。
       responses:
         '200': { description: 快取資料, content: { application/json: { schema: { $ref: '#/components/schemas/SheetSnapshot' } } } }
   /volunteer_organizations:
     get:
       operationId: listVolunteerOrgs
       summary: 取得志工招募單位清單 (分頁)
+      description: 分頁列出志工或支援單位資訊，供志願服務或協調使用。
       parameters:
         - in: query
           name: limit
@@ -94,6 +101,7 @@ paths:
     post:
       operationId: createVolunteerOrg
       summary: 建立志工招募單位
+      description: 新增一筆志工招募或支援單位資料。
       requestBody:
         required: true
         content:
@@ -106,6 +114,7 @@ paths:
     get:
       operationId: listSuppliesOverview
       summary: 供應需求整合清單 (含彙總欄位) 分頁
+      description: 彙整需求與其物資供給狀態的聚合視圖，提供總需求 / 已取得等統計欄位。
       parameters:
         - in: query
           name: status
@@ -122,6 +131,7 @@ paths:
     get:
       operationId: listShelters
       summary: 取得庇護所清單 (分頁)
+      description: 分頁列出庇護所資訊，支援依狀態過濾；不含詳細欄位時可快速瀏覽。
       parameters:
         - in: query
           name: status
@@ -137,6 +147,7 @@ paths:
     post:
       operationId: createShelter
       summary: 建立庇護所
+      description: 建立一筆新的庇護所（避難收容點）資料。
       requestBody:
         required: true
         content:
@@ -149,6 +160,7 @@ paths:
     get:
       operationId: getShelter
       summary: 取得單一庇護所
+      description: 依 UUID 取得庇護所完整詳細資料。
       parameters:
         - in: path
           name: id
@@ -160,6 +172,7 @@ paths:
     patch:
       operationId: patchShelter
       summary: 更新庇護所 (部分欄位)
+      description: 對庇護所進行部分欄位的差異更新 (PATCH)；只更新傳入的欄位。
       parameters:
         - in: path
           name: id
@@ -178,6 +191,7 @@ paths:
     get:
       operationId: listMedicalStations
       summary: 取得醫療站清單 (分頁)
+      description: 分頁列出醫療救護或醫療支援站點，可依狀態與站點型態過濾。
       parameters:
         - in: query
           name: status
@@ -196,6 +210,7 @@ paths:
     post:
       operationId: createMedicalStation
       summary: 建立醫療站
+      description: 新增一筆醫療站 / 醫療支援點資訊。
       requestBody:
         required: true
         content:
@@ -208,6 +223,7 @@ paths:
     get:
       operationId: getMedicalStation
       summary: 取得單一醫療站
+      description: 依 UUID 取得單一醫療站的詳細資訊。
       parameters:
         - in: path
           name: id
@@ -219,6 +235,7 @@ paths:
     patch:
       operationId: patchMedicalStation
       summary: 更新醫療站 (部分欄位)
+      description: 部分更新醫療站資料；未提供之欄位保持不變。
       parameters:
         - in: path
           name: id
@@ -237,6 +254,7 @@ paths:
     get:
       operationId: listMentalHealthResources
       summary: 取得心理健康資源清單 (分頁)
+      description: 分頁列出心理健康或諮商資源資料，可依狀態、服務形式、期間類型過濾。
       parameters:
         - in: query
           name: status
@@ -258,6 +276,7 @@ paths:
     post:
       operationId: createMentalHealthResource
       summary: 建立心理健康資源
+      description: 新增一筆心理健康/心理支持資源。
       requestBody:
         required: true
         content:
@@ -270,6 +289,7 @@ paths:
     get:
       operationId: getMentalHealthResource
       summary: 取得單一心理健康資源
+      description: 依 UUID 取得心理健康資源詳情。
       parameters:
         - in: path
           name: id
@@ -281,6 +301,7 @@ paths:
     patch:
       operationId: patchMentalHealthResource
       summary: 更新心理健康資源 (部分欄位)
+      description: 部分更新心理健康資源內容，只變更傳入欄位。
       parameters:
         - in: path
           name: id
@@ -299,6 +320,7 @@ paths:
     get:
       operationId: listAccommodations
       summary: 取得住宿資源清單 (分頁)
+      description: 分頁列出住宿 / 安置資源，可依狀態、鄉鎮與是否有空位過濾。
       parameters:
         - in: query
           name: status
@@ -320,6 +342,7 @@ paths:
     post:
       operationId: createAccommodation
       summary: 建立住宿資源
+      description: 新增一筆住宿資源點資料。
       requestBody:
         required: true
         content:
@@ -332,6 +355,7 @@ paths:
     get:
       operationId: getAccommodation
       summary: 取得單一住宿資源
+      description: 依 UUID 取得住宿資源詳細資料。
       parameters:
         - in: path
           name: id
@@ -343,6 +367,7 @@ paths:
     patch:
       operationId: patchAccommodation
       summary: 更新住宿資源 (部分欄位)
+      description: 部分更新住宿資源欄位；未提供欄位不改動。
       parameters:
         - in: path
           name: id
@@ -361,6 +386,7 @@ paths:
     get:
       operationId: listShowerStations
       summary: 取得洗澡點清單 (分頁)
+      description: 分頁列出洗澡/盥洗點資訊，可依狀態、設施型態、是否免費、是否需預約過濾。
       parameters:
         - in: query
           name: status
@@ -385,6 +411,7 @@ paths:
     post:
       operationId: createShowerStation
       summary: 建立洗澡點
+      description: 新增一筆洗澡/盥洗設施資料。
       requestBody:
         required: true
         content:
@@ -397,6 +424,7 @@ paths:
     get:
       operationId: getShowerStation
       summary: 取得單一洗澡點
+      description: 依 UUID 取得洗澡點詳細資訊。
       parameters:
         - in: path
           name: id
@@ -408,6 +436,7 @@ paths:
     patch:
       operationId: patchShowerStation
       summary: 更新洗澡點 (部分欄位)
+      description: 部分更新洗澡點資料；僅更新提供的欄位。
       parameters:
         - in: path
           name: id
@@ -426,6 +455,7 @@ paths:
     get:
       operationId: listWaterRefillStations
       summary: 取得飲用水補給站清單 (分頁)
+      description: 分頁列出飲用水補給站，支援依狀態、水源類型、是否免費及是否無障礙過濾。
       parameters:
         - in: query
           name: status
@@ -450,6 +480,7 @@ paths:
     post:
       operationId: createWaterRefillStation
       summary: 建立飲用水補給站
+      description: 新增一筆飲用水補給站資訊。
       requestBody:
         required: true
         content:
@@ -462,6 +493,7 @@ paths:
     get:
       operationId: getWaterRefillStation
       summary: 取得單一飲用水補給站
+      description: 依 UUID 取得飲用水補給站詳細資料。
       parameters:
         - in: path
           name: id
@@ -473,6 +505,7 @@ paths:
     patch:
       operationId: patchWaterRefillStation
       summary: 更新飲用水補給站 (部分欄位)
+      description: 部分更新飲用水補給站欄位；僅修改傳入欄位。
       parameters:
         - in: path
           name: id
@@ -491,6 +524,7 @@ paths:
     get:
       operationId: listRestrooms
       summary: 取得廁所點清單 (分頁)
+      description: 分頁列出臨時或既有廁所據點，可依狀態、類型、是否免費、是否有水/照明過濾。
       parameters:
         - in: query
           name: status
@@ -518,6 +552,7 @@ paths:
     post:
       operationId: createRestroom
       summary: 建立廁所點
+      description: 新增一筆廁所據點資訊。
       requestBody:
         required: true
         content:
@@ -530,6 +565,7 @@ paths:
     get:
       operationId: getRestroom
       summary: 取得單一廁所點
+      description: 依 UUID 取得廁所據點詳細資訊。
       parameters:
         - in: path
           name: id
@@ -541,6 +577,7 @@ paths:
     patch:
       operationId: patchRestroom
       summary: 更新廁所點 (部分欄位)
+      description: 部分更新廁所據點資料；只更新提供欄位。
       parameters:
         - in: path
           name: id
@@ -559,6 +596,7 @@ paths:
     get:
       operationId: listRequestLogs
       summary: 最近的請求紀錄 (管理用途)
+      description: 管理用途列出近期 API 請求封包紀錄（含標頭、狀態碼、耗時），供監控與除錯；應在外層由網路層或鑑權保護。
       parameters:
         - in: query
           name: limit
