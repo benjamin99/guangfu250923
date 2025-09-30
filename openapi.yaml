@@ -6,43 +6,7 @@ info:
     依據需求圖片實作的後端 API。提供建立物資需求、查詢需求清單、物資配送登記。
 servers:
   - url: http://localhost:8080
-            schema: { $ref: '#/components/schemas/CreateRequestInput' }
-      responses:
-        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Request' } } } }
-        '400': { description: 輸入錯誤 }
-  /supplies/distribute:
-    post:
-      operationId: distributeSupplies
-      summary: 物資配送 (累加 recieved_count)
-      description: 批次更新多個物資項目的已取得數量 (recieved_count)，用於紀錄實際配送或捐贈到貨。
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items: { $ref: '#/components/schemas/DistributionInput' }
-      responses:
-        '200': { description: 更新後, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SupplyItem' } } } } }
-        '400': { description: 無效或超過需求數量 }
-  /supplies:
-    get:
-      operationId: listSupplies
-      summary: 取得所有物資清單 (扁平) 分頁
-      description: 以扁平結構列出所有物資項目，支援依需求編號過濾並提供分頁資訊。
-      parameters:
-        - in: query
-          name: request_id
-          schema: { type: string, format: uuid }
-          description: 過濾某一需求的物資
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
-      responses:
-        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyCollection' } } } }
+paths:
   /sheet/snapshot:
     get:
       operationId: getSheetSnapshot
@@ -76,23 +40,6 @@ servers:
       responses:
         '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrganization' } } } }
         '400': { description: 輸入錯誤 }
-  /supplies_overview:
-    get:
-      operationId: listSuppliesOverview
-      summary: 供應需求整合清單 (含彙總欄位) 分頁
-      description: 彙整需求與其物資供給狀態的聚合視圖，提供總需求 / 已取得等統計欄位。
-      parameters:
-        - in: query
-          name: status
-          schema: { type: string }
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
-      responses:
-        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SuppliesOverviewCollection' } } } }
   /shelters:
     get:
       operationId: listShelters
@@ -777,6 +724,29 @@ servers:
         '404': { description: 找不到 }
 components:
   schemas:
+    DistributionInput:
+      type: object
+      required: [id, count]
+      properties:
+        id: { type: string, format: uuid, description: suppily_item ID }
+        count: { type: integer, minimum: 1, description: 本次配送新增數量 }
+    SupplyItem:
+      allOf: [{ $ref: '#/components/schemas/SuppilyItem' }]
+    SuppliesOverviewCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items:
+                type: object
+                properties:
+                  request_id: { type: string, format: uuid }
+                  total_items: { type: integer }
+                  completed_items: { type: integer }
+                  pending_items: { type: integer }
+                  progress: { type: number, format: float }
     CollectionBase:
       type: object
       properties:
@@ -792,32 +762,6 @@ components:
       properties:
         updated: { type: string, format: date-time }
         headers: { type: array, items: { type: string } }
-        rows:
-          type: object
-          additionalProperties:
-            type: object
-            additionalProperties: { type: string }
-    VolunteerOrganization:
-      type: object
-      properties:
-        id: { type: string, format: uuid }
-        last_updated: { type: string, format: date-time }
-        registration_status: { type: string }
-        organization_nature: { type: string }
-        organization_name: { type: string }
-        coordinator: { type: string }
-        contact_info: { type: string }
-        registration_method: { type: string }
-        service_content: { type: string }
-        meeting_info: { type: string }
-        notes: { type: string }
-        image_url: { type: string, nullable: true }
-    VolunteerOrgCreate:
-      type: object
-      required: [organization_name]
-      properties:
-        registration_status: { type: string }
-        organization_nature: { type: string }
         organization_name: { type: string }
         coordinator: { type: string }
         contact_info: { type: string }
@@ -1969,6 +1913,34 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/HumanResource' }
+    VolunteerOrganization:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        organization_name: { type: string }
+        registration_status: { type: string, nullable: true }
+        organization_nature: { type: string, nullable: true }
+        coordinator: { type: string, nullable: true }
+        contact_info: { type: string, nullable: true }
+        registration_method: { type: string, nullable: true }
+        service_content: { type: string, nullable: true }
+        meeting_info: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        image_url: { type: string, nullable: true }
+    VolunteerOrgCreate:
+      type: object
+      required: [organization_name]
+      properties:
+        organization_name: { type: string }
+        registration_status: { type: string, nullable: true }
+        organization_nature: { type: string, nullable: true }
+        coordinator: { type: string, nullable: true }
+        contact_info: { type: string, nullable: true }
+        registration_method: { type: string, nullable: true }
+        service_content: { type: string, nullable: true }
+        meeting_info: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        image_url: { type: string, nullable: true }
     Supply:
       type: object
       properties:
@@ -1980,10 +1952,9 @@ components:
         created_at: { type: integer, format: int64 }
         updated_at: { type: integer, format: int64 }
         supplies:
-          description: 建立或查詢時若僅需顯示第一個物資項目，回傳單一物件 (非陣列)
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/SuppilyItem'
+          type: array
+          description: 供應單全部物資項目 (可能為空陣列)
+          items: { $ref: '#/components/schemas/SuppilyItem' }
     SupplyCreate:
       type: object
       properties:

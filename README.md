@@ -1,26 +1,159 @@
-# 災害物資需求後端 (Go + PostgreSQL)
+# 災害物資 / 支援資源後端 (Go + PostgreSQL)
 
-## 欄位需求討論
-https://github.com/carolchu1208/Hualian-Typhoon-Rescue-Site-Backend-Team
+以快速支援災後資訊蒐集、物資供應追蹤、人力/設施資源盤點為目標的 API。採用 Go + Gin + PostgreSQL，提供 JSON-LD 風格的分頁集合回應格式。
 
-本專案依照需求圖片實作：
+> 目前已淘汰舊有 `/requests` 需求主檔 + 傳統 supplies 聚合模式，改為「供應單 (Supply)」+「物資項目 (SuppilyItem)」的較簡化模型。
 
-功能：
-1. 建立物資需求 (POST /requests)
-2. 取得需求清單 (GET /requests) － 已支援分頁 (limit / offset) 與 JSON-LD Collection 包裝
-3. 物資配送登記 (POST /supplies/distribute)
-4. 物資扁平清單 (GET /supplies) － 支援依 request_id 過濾 + 分頁
-5. OpenAPI 規格檔 `openapi.yaml`
+## 主要功能模組
+| 模組 | Path 前綴 | 說明 |
+|------|-----------|------|
+| 供應單 / 物資 | `/supplies`, `/suppily_items` | 建立供應單、單筆/多筆物資項目管理、批次配送 (累加 `recieved_count`) |
+| 志工招募單位 | `/volunteer_organizations` | 招募或協作單位資訊 |
+| 庇護所 | `/shelters` | 庇護 / 收容點資訊 |
+| 醫療站 | `/medical_stations` | 醫療支援站點 |
+| 心理健康資源 | `/mental_health_resources` | 諮商 / 心理支持資源 |
+| 住宿資源 | `/accommodations` | 臨時住宿或安置資訊 |
+| 沐浴/淋浴 | `/shower_stations` | 行動浴室 / 盥洗點 |
+| 飲水補給 | `/water_refill_stations` | 飲水補給點 |
+| 廁所 | `/restrooms` | 臨時 / 既有廁所點 |
+| 人力需求 | `/human_resources` | 人力角色與填補狀態 |
+| 要求紀錄 | `/_admin/request_logs` | 最近 API 請求 (管理用途) |
+| Sheet 快取 | `/sheet/snapshot` | 從 Google Sheet 載入的快取快照 |
+| 健康檢查 | `/healthz` | 基本健康檢查 |
 
-擴充欄位 (圖片下方列出的 API 欄位) 亦已納入：
-- code 站點名稱/代碼
-- status 狀態 (pending / partial / fulfilled / closed)
-- needed_people 所需人數
-- contact 聯繫資訊 (若僅有 phone 會自動帶入)
-- notes 備註
-- lng, lat 經緯度
-- map_link 地圖或導航連結
-- created_at Unix timestamp (秒)
+完整欄位與 Schema 參考 `openapi.yaml`。
+
+## JSON-LD 分頁格式
+所有「集合型」(list) GET 端點採統一格式：
+
+```jsonc
+{
+  "@context": "https://www.w3.org/ns/hydra/context.jsonld",
+  "@type": "Collection",
+  "totalItems": 123,
+  "member": [ /* 資料陣列 */ ],
+  "limit": 50,
+  "offset": 0,
+  "next": "/supplies?limit=50&offset=50",    // 無則為 null
+  "previous": null
+}
+```
+
+## 供應單 (Supply) 與物資項目 (SuppilyItem)
+
+設計重點：
+- 建立供應單時可「可選」內嵌 1 個初始物資項目 (payload 的 `supplies` 為單一物件)。
+- 供應單查詢 (`GET /supplies/{id}`) 回傳 `supplies` 為「陣列」(可能為空)。
+- 物資項目欄位採用 `recieved_count`（刻意沿用前端既有錯字，不是 received）。
+- 數量邏輯：`recieved_count <= total_count`，批次配送與 PATCH 都會驗證。
+
+### 建立供應單
+POST `/supplies`
+```json
+{
+  "name": "光復倉庫 A",
+  "address": "光復鄉中正路 123 號",
+  "phone": "03-8700000",
+  "notes": "民間協助據點",
+  "supplies": {
+    "tag": "food",
+    "name": "白米",
+    "total_count": 500,
+    "unit": "公斤",
+    "recieved_count": 50
+  }
+}
+```
+回應 (201)：
+```json
+{
+  "@context": "https://www.w3.org/ns/hydra/context.jsonld",
+  "@type": "Supply",
+  "id": "<uuid>",
+  "name": "光復倉庫 A",
+  "address": "光復鄉中正路 123 號",
+  "created_at": 1728000000,
+  "updated_at": 1728000000,
+  "supplies": [
+    {"id":"<item-uuid>","suppily_id":"<uuid>","tag":"food","name":"白米","recieved_count":50,"total_count":500,"unit":"公斤"}
+  ]
+}
+```
+
+### 取得單一供應單
+GET `/supplies/{id}`
+
+回應：同上格式；若無物資項目則 `"supplies": []`。
+
+### 列出供應單
+GET `/supplies?limit=50&offset=0`
+
+目前列表中的每個 `member` 供應單物件（暫未嵌入 supplies 陣列）只含基本欄位；需要細項時請再呼叫 `GET /supplies/{id}`。未來若要內嵌第一筆或全部項目，可再調整。
+
+### 建立物資項目
+POST `/suppily_items`
+```json
+{
+  "suppily_id": "<supply-uuid>",
+  "tag": "medical",
+  "name": "繃帶",
+  "total_count": 200,
+  "unit": "卷"
+}
+```
+回應：`{ "id": "<item-uuid>" }`
+
+### 更新物資項目 (部分欄位)
+PATCH `/suppily_items/{id}`
+```json
+{ "recieved_count": 120 }
+```
+若更新後 `recieved_count > total_count` 會回 400。
+
+### 批次配送 (累加數量)
+POST `/supplies/{id}`  （注意：不是舊版的 `/supplies/distribute`）
+```json
+[
+  {"id": "<item-uuid-1>", "count": 10},
+  {"id": "<item-uuid-2>", "count": 5}
+]
+```
+成功：回傳更新後的物資項目陣列。
+
+失敗範例 (超過 total_count)：
+```json
+{
+  "error": "exceeds total_count",
+  "id": "<item-uuid-1>",
+  "recieved_count": 95,
+  "total_count": 100,
+  "attempt_add": 10
+}
+```
+
+### 物資欄位摘要
+| 欄位 | 說明 |
+|------|------|
+| tag | 分類 (food, medical, etc.) |
+| name | 物資名稱 |
+| recieved_count | 已取得 / 已配送數量 (錯字沿用) |
+| total_count | 需求或目標數量 |
+| unit | 單位 (箱, 包, 公斤, 人, 卷...) |
+
+## 其他資源端點
+其餘（庇護所 / 醫療站 / 心理健康 / 住宿 / 沐浴 / 飲水 / 廁所 / 志工招募 / 人力需求）皆採類似模式：
+- POST 建立
+- GET 列表（分頁 JSON-LD）
+- GET {id} 單筆
+- PATCH {id} 部分更新（僅部分資源支援）
+
+## 錯誤格式
+大多數錯誤：`{ "error": "<訊息>" }`
+部分情境（批次配送）會附加額外欄位 (id, recieved_count, total_count, attempt_add)。
+
+## 命名特別說明
+- `recieved_count`：與前端既有欄位保持一致的錯字；資料庫內部欄位仍為 `received_count`。
+- `suppily_items`：沿用需求原拼法 (suppily)。
 
 ## 環境變數
 從環境讀取 (未使用外部 dotenv 套件)，可參考 `.env.example`：
@@ -35,113 +168,31 @@ DB_SSLMODE=disable
 PORT=8080
 ```
 
-可自行 `export` 或用 shell 載入：
+載入方式：
 ```
 set -a; source .env; set +a
 ```
 
-## 啟動
+## 執行
 ```
 go build ./...
 go run ./cmd/server
 ```
+啟動時會執行簡易 migration（不存在才建立）。
 
-啟動時會自動執行簡易 migration，建立資料表 (若不存在)。
+## OpenAPI 規格
+檔案：`openapi.yaml`（可直接以 `/openapi.yaml` 提供、Swagger UI: `/swagger/`）。
 
-## API 總覽
-詳見 `openapi.yaml`。重點：
-
-### 分頁與 JSON-LD Collection 格式
-目前 `GET /requests` 與 `GET /supplies` 回傳格式採用簡化 Hydra / JSON-LD Collection：
-
-```jsonc
-{
-  "@context": "https://www.w3.org/ns/hydra/context.jsonld",
-  "@type": "Collection",
-  "totalItems": 123,          // 總筆數
-  "member": [ /* 陣列資料 */ ],
-  "limit": 20,                // 本頁大小
-  "offset": 40,               // 從第幾筆開始 (0-based)
-  "next": "/requests?limit=20&offset=60",    // 若無後續頁面為 null
-  "previous": "/requests?limit=20&offset=20" // 若無前一頁為 null
-}
+### Lint (Spectral)
+專案含 CI 工作流程：
+```
+spectral lint --ruleset .spectral.yaml openapi.yaml
 ```
 
-Query 參數：
-- limit: 每頁筆數 (requests: 預設 20, 最大 200；supplies: 預設 50, 最大 500)
-- offset: 起始偏移 (0 為第一頁)
-- status: (僅 /requests) 過濾需求狀態
-- request_id: (僅 /supplies) 過濾特定需求下物資
-
-範例：
-```
-GET /requests?limit=20&offset=0
-GET /requests?status=pending&limit=10&offset=30
-GET /supplies?request_id=<uuid>&limit=100
-```
-
-### 建立需求
-POST /requests
-```json
-{
-  "code":"GF001",
-  "name":"需要救援單位 A",
-  "address":"地址",
-  "phone":"0912...",
-  "contact":"聯絡人資訊，可含電話",
-  "status":"pending",
-  "needed_people":30,
-  "notes":"備註",
-  "lng":121.5,
-  "lat":25.0,
-  "map_link":"https://maps.example/...",
-  "supplies": [
-    {"tag":"food","name":"罐頭","total_count":100,"unit":"箱"},
-    {"tag":"medical","name":"繃帶","total_count":200,"unit":"包"}
-  ]
-}
-```
-
-也可傳單一物資物件 (符合圖片原格式)：
-```json
-{
-  "name":"單位名稱",
-  "address":"...",
-  "phone":"...",
-  "supplies": {"tag":"food","name":"餅乾","total_count":50,"unit":"箱"}
-}
-```
-
-### 取得需求清單
-GET /requests
-
-回傳包含每個需求及其 supplies，`created_at` 為 Unix 秒，外層使用 JSON-LD Collection 包裝 (見上)。
-
-可用 `status` query 過濾：`/requests?status=pending`。
-
-### 物資清單 (扁平)
-GET /supplies
-
-回傳所有物資 (不含需求主檔欄位)，支援：
-```
-GET /supplies?limit=50&offset=0
-GET /supplies?request_id=<需求UUID>&limit=100
-```
-回傳同樣套用 JSON-LD Collection。
-
-### 物資配送
-POST /supplies/distribute
-```json
-[
-  {"id":"<supply-item-uuid>", "count":10},
-  {"id":"<另一個>", "count":5}
-]
-```
-會將 `recieved_count` 累加；若超過 `total_count` 會回 400。
-
-## OpenAPI
-`openapi.yaml` 可匯入 Swagger UI / Redoc。
-
+## 待改進 (Roadmap)
+- ListSupplies 是否要內嵌部分或全部物資項目
+- Error schema 標準化 (統一格式 + code)
+- 欄位/Schema 測試與自動化驗證
 
 ---
-有需要再調整欄位或增加端點，歡迎提出！
+需要新增欄位或端點，歡迎提出 Issue / PR。
