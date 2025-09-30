@@ -46,6 +46,9 @@ jobs:
           if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
           mkdir -p dist
           go build -trimpath -ldflags "-s -w" -o dist/${BIN_NAME}_${GOOS}_${GOARCH}${EXT} ./cmd/server/main.go
+      - name: Copy OpenAPI spec
+        run: |
+          cp openapi.yaml dist/openapi.yaml
 
       - name: Generate checksums
         if: matrix.goos == 'windows'
@@ -88,6 +91,7 @@ jobs:
           files: |
             dist/guangfu250923_*
             dist/SHA256SUMS.txt
+            dist/openapi.yaml
           draft: false
           prerelease: false
         env:
