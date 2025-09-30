@@ -84,6 +84,7 @@ func (h *Handler) CreateSupply(c *gin.Context) {
 func (h *Handler) ListSupplies(c *gin.Context) {
 	limit := parsePositiveInt(c.Query("limit"), 50, 1, 500)
 	offset := parsePositiveInt(c.Query("offset"), 0, 0, 1000000)
+	embed := c.Query("embed")
 	ctx := context.Background()
 	var total int
 	if err := h.pool.QueryRow(ctx, `select count(*) from supplies`).Scan(&total); err != nil {
@@ -111,15 +112,7 @@ func (h *Handler) ListSupplies(c *gin.Context) {
 		s.Notes = notes
 		s.CreatedAt = created
 		s.UpdatedAt = updated
-		// 取第一個 item（如果存在）並組合輸出 map
-		var tag, iname, unit *string
-		var rc, tc int
-		var itemID, suppID string
-		if errItem := h.pool.QueryRow(ctx, `select id,supply_id,tag,name,received_count,total_number,unit from supply_items where supply_id=$1 order by id asc limit 1`, s.ID).Scan(&itemID, &suppID, &tag, &iname, &rc, &tc, &unit); errItem == nil {
-			list = append(list, models.Supply{ID: s.ID, Name: s.Name, Address: s.Address, Phone: s.Phone, Notes: s.Notes, CreatedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt})
-		} else {
-			list = append(list, s)
-		}
+		list = append(list, s)
 	}
 	baseURL := c.Request.URL.Path
 	q := c.Request.URL.Query()
@@ -138,7 +131,59 @@ func (h *Handler) ListSupplies(c *gin.Context) {
 		s := build(offset - limit)
 		prev = &s
 	}
-	c.JSON(http.StatusOK, gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Collection", "totalItems": total, "member": list, "limit": limit, "offset": offset, "next": next, "previous": prev})
+	// If embed=all, batch load all items; else keep empty arrays for consistency
+	itemsMap := map[string][]models.SupplyItem{}
+	if embed == "all" && len(list) > 0 {
+		// Build IN clause dynamically
+		placeholders := make([]string, len(list))
+		argsItems := make([]interface{}, len(list))
+		for i, s := range list {
+			placeholders[i] = "$" + strconv.Itoa(i+1)
+			argsItems[i] = s.ID
+		}
+		query := "select id,supply_id,tag,name,received_count,total_number,unit from supply_items where supply_id in (" + strings.Join(placeholders, ",") + ") order by supply_id,id asc"
+		rowsIt, err := h.pool.Query(ctx, query, argsItems...)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		for rowsIt.Next() {
+			var it models.SupplyItem
+			var tag, name, unit *string
+			if err := rowsIt.Scan(&it.ID, &it.SupplyID, &tag, &name, &it.ReceivedCount, &it.TotalCount, &unit); err != nil {
+				rowsIt.Close()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			it.Tag = tag
+			it.Name = name
+			it.Unit = unit
+			itemsMap[it.SupplyID] = append(itemsMap[it.SupplyID], it)
+		}
+		rowsIt.Close()
+	}
+	wrapped := make([]gin.H, 0, len(list))
+	for _, s := range list {
+		var suppliesArr any = []interface{}{}
+		if embed == "all" {
+			if its, ok := itemsMap[s.ID]; ok {
+				suppliesArr = its
+			} else {
+				suppliesArr = []interface{}{}
+			}
+		}
+		wrapped = append(wrapped, gin.H{
+			"id":         s.ID,
+			"name":       s.Name,
+			"address":    s.Address,
+			"phone":      s.Phone,
+			"notes":      s.Notes,
+			"created_at": s.CreatedAt,
+			"updated_at": s.UpdatedAt,
+			"supplies":   suppliesArr,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Collection", "totalItems": total, "member": wrapped, "limit": limit, "offset": offset, "next": next, "previous": prev})
 }
 
 func (h *Handler) GetSupply(c *gin.Context) {

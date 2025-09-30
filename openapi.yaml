@@ -641,6 +641,12 @@ paths:
         - in: query
           name: offset
           schema: { type: integer, minimum: 0, default: 0 }
+        - in: query
+          name: embed
+          schema:
+            type: string
+            enum: [all]
+          description: 若設為 all，回傳集合中每個供應單的 supplies 會嵌入其全部物資項目；未指定時 supplies 為空陣列（僅佔位），需再以 GET /supplies/{id} 取得詳細。
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyCollection' } } } }
     post:
@@ -779,24 +785,11 @@ components:
       properties:
         '@context': { type: string, example: https://www.w3.org/ns/hydra/context.jsonld }
         '@type': { type: string, example: Collection }
-        totalItems: { type: integer }
-        limit: { type: integer }
-        offset: { type: integer }
-        next: { type: string, nullable: true }
-        previous: { type: string, nullable: true }
-    SheetSnapshot:
-      type: object
-      properties:
-        updated: { type: string, format: date-time }
-        headers: { type: array, items: { type: string } }
-        organization_name: { type: string }
-        coordinator: { type: string }
-        contact_info: { type: string }
-        registration_method: { type: string }
-        service_content: { type: string }
-        meeting_info: { type: string }
-        notes: { type: string }
-        image_url: { type: string, nullable: true }
+        totalItems: { type: integer, description: 符合條件的總筆數 }
+        limit: { type: integer, description: 本次回傳的筆數上限 }
+        offset: { type: integer, description: 本次回傳的起始位置 }
+        next: { type: string, nullable: true, description: 下一頁的連結 (若有) }
+        previous: { type: string, nullable: true, description: 前一頁的連結 (若有) }
     VolunteerOrgCollection:
       allOf:
         - $ref: '#/components/schemas/CollectionBase'
