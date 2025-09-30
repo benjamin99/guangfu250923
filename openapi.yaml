@@ -865,7 +865,7 @@ components:
         updated_at: { type: integer, format: int64 }
     MedicalStationCreate:
       type: object
-      required: [station_type, name, location, status]
+      required: [station_type, name, status]
       properties:
         station_type: { type: string }
         name: { type: string }

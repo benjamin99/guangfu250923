@@ -15,7 +15,7 @@ import (
 type medicalStationCreateInput struct {
 	StationType     string   `json:"station_type" binding:"required"`
 	Name            string   `json:"name" binding:"required"`
-	Location        string   `json:"location" binding:"required"`
+	Location        string   `json:"location"`
 	DetailedAddress *string  `json:"detailed_address"`
 	Phone           *string  `json:"phone"`
 	ContactPerson   *string  `json:"contact_person"`
