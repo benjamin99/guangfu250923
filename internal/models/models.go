@@ -314,3 +314,44 @@ type Restroom struct {
 	CreatedAt int64 `json:"created_at"`
 	UpdatedAt int64 `json:"updated_at"`
 }
+
+// HumanResource represents human_resources view/aggregation row
+type HumanResource struct {
+	ID                     string   `json:"id"`
+	Org                    string   `json:"org"`
+	Address                string   `json:"address"`
+	Phone                  string   `json:"phone"`
+	Status                 string   `json:"status"`
+	IsCompleted            bool     `json:"is_completed"`
+	HasMedical             *bool    `json:"has_medical"`
+	CreatedAt              int64    `json:"created_at"`
+	UpdatedAt              int64    `json:"updated_at"`
+	RoleName               string   `json:"role_name"`
+	RoleType               string   `json:"role_type"`
+	Skills                 []string `json:"skills"`
+	Certifications         []string `json:"certifications"`
+	ExperienceLevel        *string  `json:"experience_level"`
+	LanguageRequirements   []string `json:"language_requirements"`
+	HeadcountNeed          int      `json:"headcount_need"`
+	HeadcountGot           int      `json:"headcount_got"`
+	HeadcountUnit          *string  `json:"headcount_unit"`
+	RoleStatus             string   `json:"role_status"`
+	ShiftStartTs           *int64   `json:"shift_start_ts"`
+	ShiftEndTs             *int64   `json:"shift_end_ts"`
+	ShiftNotes             *string  `json:"shift_notes"`
+	AssignmentTimestamp    *int64   `json:"assignment_timestamp"`
+	AssignmentCount        *int     `json:"assignment_count"`
+	AssignmentNotes        *string  `json:"assignment_notes"`
+	TotalRolesInRequest    *int     `json:"total_roles_in_request"`
+	CompletedRolesInRequest *int    `json:"completed_roles_in_request"`
+	PendingRolesInRequest  *int     `json:"pending_roles_in_request"`
+	TotalRequests          *int     `json:"total_requests"`
+	ActiveRequests         *int     `json:"active_requests"`
+	CompletedRequests      *int     `json:"completed_requests"`
+	CancelledRequests      *int     `json:"cancelled_requests"`
+	TotalRoles             *int     `json:"total_roles"`
+	CompletedRoles         *int     `json:"completed_roles"`
+	PendingRoles           *int     `json:"pending_roles"`
+	UrgentRequests         *int     `json:"urgent_requests"`
+	MedicalRequests        *int     `json:"medical_requests"`
+}

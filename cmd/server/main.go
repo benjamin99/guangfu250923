@@ -39,11 +39,13 @@ func main() {
 	// CORS configuration: allow specified front-end origins
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			// "*",
+			"*",
 			"http://127.0.0.1:5500",
 			"http://localhost:5050",
 			"http://127.0.0.1:5050",
 			"https://sites.google.com/view/guangfu250923",
+			"https://692001998-atari-embeds.googleusercontent.com",
+			"https://*-atari-embeds.googleusercontent.com",
 		},
 		AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
@@ -111,6 +113,11 @@ func main() {
 	r.PATCH("/restrooms/:id", h.PatchRestroom)
 	r.POST("/volunteer_organizations", h.CreateVolunteerOrg)
 	r.GET("/volunteer_organizations", h.ListVolunteerOrgs)
+	// Human resources
+	r.GET("/human_resources", h.ListHumanResources)
+	r.GET("/human_resources/:id", h.GetHumanResource)
+	r.POST("/human_resources", h.CreateHumanResource)
+	r.PATCH("/human_resources/:id", h.PatchHumanResource)
 	// Admin: request logs
 	r.GET("/_admin/request_logs", h.ListRequestLogs)
 

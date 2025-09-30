@@ -617,6 +617,72 @@ paths:
           schema: { type: integer, minimum: 0, default: 0 }
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequestLogCollection' } } } }
+  /human_resources:
+    get:
+      operationId: listHumanResources
+      summary: 取得人力需求清單 (分頁)
+      description: 以分頁方式列出人力需求/角色資訊，可依狀態與角色類型過濾。
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: role_status
+          schema: { type: string }
+        - in: query
+          name: role_type
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/HumanResourceCollection' } } } }
+    post:
+      operationId: createHumanResource
+      summary: 建立人力需求/角色
+      description: 建立一筆人力角色需求紀錄 (含需求人數與技能等資訊)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HumanResourceCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/HumanResource' } } } }
+        '400': { description: 輸入錯誤 }
+  /human_resources/{id}:
+    get:
+      operationId: getHumanResource
+      summary: 取得單一人力需求/角色
+      description: 依 ID 取得人力角色需求詳細資訊。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/HumanResource' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchHumanResource
+      summary: 更新人力需求/角色 (部分欄位)
+      description: 部分更新人力角色需求欄位，只更新傳入欄位。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HumanResourcePatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/HumanResource' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
 components:
   schemas:
     CollectionBase:
@@ -1420,6 +1486,117 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/Restroom' }
+    HumanResource:
+      type: object
+      properties:
+        id: { type: string }
+        org: { type: string }
+        address: { type: string }
+        phone: { type: string }
+        status: { type: string }
+        is_completed: { type: boolean }
+        has_medical: { type: boolean, nullable: true }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+        role_name: { type: string }
+        role_type: { type: string }
+        skills: { type: array, items: { type: string } }
+        certifications: { type: array, items: { type: string } }
+        experience_level: { type: string, nullable: true }
+        language_requirements: { type: array, items: { type: string } }
+        headcount_need: { type: integer }
+        headcount_got: { type: integer }
+        headcount_unit: { type: string, nullable: true }
+        role_status: { type: string }
+        shift_start_ts: { type: integer, format: int64, nullable: true }
+        shift_end_ts: { type: integer, format: int64, nullable: true }
+        shift_notes: { type: string, nullable: true }
+        assignment_timestamp: { type: integer, format: int64, nullable: true }
+        assignment_count: { type: integer, nullable: true }
+        assignment_notes: { type: string, nullable: true }
+        total_roles_in_request: { type: integer, nullable: true }
+        completed_roles_in_request: { type: integer, nullable: true }
+        pending_roles_in_request: { type: integer, nullable: true }
+        total_requests: { type: integer, nullable: true }
+        active_requests: { type: integer, nullable: true }
+        completed_requests: { type: integer, nullable: true }
+        cancelled_requests: { type: integer, nullable: true }
+        total_roles: { type: integer, nullable: true }
+        completed_roles: { type: integer, nullable: true }
+        pending_roles: { type: integer, nullable: true }
+        urgent_requests: { type: integer, nullable: true }
+        medical_requests: { type: integer, nullable: true }
+    HumanResourceCreate:
+      type: object
+      required: [org,address,phone,status,is_completed,role_name,role_type,headcount_need,headcount_got,role_status]
+      properties:
+        org: { type: string }
+        address: { type: string }
+        phone: { type: string }
+        status: { type: string }
+        is_completed: { type: boolean }
+        has_medical: { type: boolean, nullable: true }
+        role_name: { type: string }
+        role_type: { type: string }
+        skills: { type: array, items: { type: string } }
+        certifications: { type: array, items: { type: string } }
+        experience_level: { type: string, nullable: true }
+        language_requirements: { type: array, items: { type: string } }
+        headcount_need: { type: integer }
+        headcount_got: { type: integer }
+        headcount_unit: { type: string, nullable: true }
+        role_status: { type: string }
+        shift_start_ts: { type: integer, format: int64, nullable: true }
+        shift_end_ts: { type: integer, format: int64, nullable: true }
+        shift_notes: { type: string, nullable: true }
+        assignment_timestamp: { type: integer, format: int64, nullable: true }
+        assignment_count: { type: integer, nullable: true }
+        assignment_notes: { type: string, nullable: true }
+    HumanResourcePatch:
+      type: object
+      properties:
+        org: { type: string }
+        address: { type: string }
+        phone: { type: string }
+        status: { type: string }
+        is_completed: { type: boolean }
+        has_medical: { type: boolean }
+        role_name: { type: string }
+        role_type: { type: string }
+        skills: { type: array, items: { type: string } }
+        certifications: { type: array, items: { type: string } }
+        experience_level: { type: string }
+        language_requirements: { type: array, items: { type: string } }
+        headcount_need: { type: integer }
+        headcount_got: { type: integer }
+        headcount_unit: { type: string }
+        role_status: { type: string }
+        shift_start_ts: { type: integer, format: int64 }
+        shift_end_ts: { type: integer, format: int64 }
+        shift_notes: { type: string }
+        assignment_timestamp: { type: integer, format: int64 }
+        assignment_count: { type: integer }
+        assignment_notes: { type: string }
+        total_roles_in_request: { type: integer }
+        completed_roles_in_request: { type: integer }
+        pending_roles_in_request: { type: integer }
+        total_requests: { type: integer }
+        active_requests: { type: integer }
+        completed_requests: { type: integer }
+        cancelled_requests: { type: integer }
+        total_roles: { type: integer }
+        completed_roles: { type: integer }
+        pending_roles: { type: integer }
+        urgent_requests: { type: integer }
+        medical_requests: { type: integer }
+    HumanResourceCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/HumanResource' }
     SupplyItemCreate:
       type: object
       required: [name, total_count, unit]
