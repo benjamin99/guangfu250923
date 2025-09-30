@@ -1244,30 +1244,98 @@ components:
     WaterRefillStation:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        name: { type: string }
-        address: { type: string }
-        phone: { type: string, nullable: true }
-        water_type: { type: string, description: 'drinking_water, bottled_water, filtered_water' }
-        opening_hours: { type: string }
-        is_free: { type: boolean }
-        container_required: { type: string, nullable: true }
-        daily_capacity: { type: integer, nullable: true }
-        status: { type: string, description: 'active, temporarily_unavailable, ended' }
-        water_quality: { type: string, nullable: true }
-        facilities: { type: array, items: { type: string } }
-        accessibility: { type: boolean }
-        distance_to_disaster_area: { type: string, nullable: true }
-        notes: { type: string, nullable: true }
-        info_source: { type: string, nullable: true }
+        id:
+          type: string
+          format: uuid
+          description: 裝水點唯一識別碼
+          example: 123e4567-e89b-12d3-a456-426614174001
+          readOnly: true
+        name:
+          type: string
+          description: 地點名稱
+          example: 光復國小裝水站
+        address:
+          type: string
+          description: 地址
+          example: 花蓮縣光復鄉中山路三段75號
+        phone:
+          type: string
+          nullable: true
+          description: 聯絡電話
+          example: 03-8701129
+        water_type:
+          type: string
+          description: 水源類型 (drinking_water, bottled_water, filtered_water)
+          example: drinking_water
+        opening_hours:
+          type: string
+          description: 開放時間
+          example: 24小時
+        is_free:
+          type: boolean
+          description: 是否免費
+          example: true
+        container_required:
+          type: string
+          nullable: true
+          description: 容器要求
+          example: 自備容器
+        daily_capacity:
+          type: integer
+          nullable: true
+          description: 每日供水量 (公升)
+          example: 500
+        status:
+          type: string
+          description: 營運狀態 (active, temporarily_unavailable, ended)
+          example: active
+        water_quality:
+          type: string
+          nullable: true
+          description: 水質狀態 (tested, safe, needs_boiling)
+          example: tested
+        facilities:
+          type: array
+          items: { type: string }
+          description: 額外設施
+          example: ["飲水機","水龍頭","瓶裝水發放"]
+        accessibility:
+          type: boolean
+          description: 是否具備無障礙設施
+          example: true
+        distance_to_disaster_area:
+          type: string
+          nullable: true
+          description: 距災區距離
+          example: 5分鐘車程
+        notes:
+          type: string
+          nullable: true
+          description: 備註
+          example: 提供冷熱水, 請自備容器
+        info_source:
+          type: string
+          nullable: true
+          description: 資料來源
+          example: 鄉公所公告
         coordinates:
           type: object
           nullable: true
           properties:
             lat: { type: number, format: double, nullable: true }
             lng: { type: number, format: double, nullable: true }
-        created_at: { type: integer, format: int64 }
-        updated_at: { type: integer, format: int64 }
+        created_at:
+          type: integer
+          format: int64
+          description: 建立時間 (Unix timestamp 秒)
+          example: 1727664000
+          readOnly: true
+        updated_at:
+          type: integer
+          format: int64
+          description: 更新時間 (Unix timestamp 秒)
+          example: 1727750400
+          readOnly: true
     WaterRefillStationCreate:
       type: object
       required: [name, address, water_type, opening_hours, is_free, status, accessibility]
