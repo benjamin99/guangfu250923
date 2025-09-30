@@ -1491,43 +1491,198 @@ components:
     HumanResource:
       type: object
       properties:
-        id: { type: string }
-        org: { type: string }
-        address: { type: string }
-        phone: { type: string }
-        status: { type: string }
-        is_completed: { type: boolean }
-        has_medical: { type: boolean, nullable: true }
-        created_at: { type: integer, format: int64 }
-        updated_at: { type: integer, format: int64 }
-        role_name: { type: string }
-        role_type: { type: string }
-        skills: { type: array, items: { type: string } }
-        certifications: { type: array, items: { type: string } }
-        experience_level: { type: string, nullable: true }
-        language_requirements: { type: array, items: { type: string } }
-        headcount_need: { type: integer }
-        headcount_got: { type: integer }
-        headcount_unit: { type: string, nullable: true }
-        role_status: { type: string }
-        shift_start_ts: { type: integer, format: int64, nullable: true }
-        shift_end_ts: { type: integer, format: int64, nullable: true }
-        shift_notes: { type: string, nullable: true }
-        assignment_timestamp: { type: integer, format: int64, nullable: true }
-        assignment_count: { type: integer, nullable: true }
-        assignment_notes: { type: string, nullable: true }
-        total_roles_in_request: { type: integer, nullable: true }
-        completed_roles_in_request: { type: integer, nullable: true }
-        pending_roles_in_request: { type: integer, nullable: true }
-        total_requests: { type: integer, nullable: true }
-        active_requests: { type: integer, nullable: true }
-        completed_requests: { type: integer, nullable: true }
-        cancelled_requests: { type: integer, nullable: true }
-        total_roles: { type: integer, nullable: true }
-        completed_roles: { type: integer, nullable: true }
-        pending_roles: { type: integer, nullable: true }
-        urgent_requests: { type: integer, nullable: true }
-        medical_requests: { type: integer, nullable: true }
+        id:
+          type: string
+          description: 需求唯一識別碼
+          example: hr-26f95ee9-e920-4f44-95a2-d40ded631893
+          readOnly: true
+        org:
+          type: string
+          description: 單位名稱
+          example: 吉安鄉志工服務隊
+        address:
+          type: string
+          description: 工作地點地址
+          example: 花蓮縣吉安鄉中山路三段100號
+        phone:
+          type: string
+          description: 聯絡電話
+          example: 038-123456
+        status:
+          type: string
+          description: 需求狀態 (active, completed, cancelled)
+          example: active
+        is_completed:
+          type: boolean
+          description: 是否已完成
+          example: false
+        has_medical:
+          type: boolean
+          nullable: true
+          description: 是否屬於醫療人力需求
+          example: false
+        created_at:
+          type: integer
+          format: int64
+          description: 建立時間 (Unix Timestamp 秒)
+          example: 1759164503
+          readOnly: true
+        updated_at:
+          type: integer
+          format: int64
+          description: 更新時間 (Unix Timestamp 秒)
+          example: 1759164503
+          readOnly: true
+        role_name:
+          type: string
+          description: 人力角色名稱
+          example: 搬運志工
+        role_type:
+          type: string
+          description: 人力類型 (一般志工, 醫療人員, 行政支援, 司機, 安全維護, 其他)
+          example: 一般志工
+        skills:
+          type: array
+          items: { type: string }
+          description: 所需技能或資格
+          example: ["搬運","CPR","急救證照"]
+        certifications:
+          type: array
+          items: { type: string }
+          description: 必要證照
+          example: ["急救員證照"]
+        experience_level:
+          type: string
+          nullable: true
+          description: 經驗需求 (level_1, level_2, level_3)
+          example: level_1
+        language_requirements:
+          type: array
+          items: { type: string }
+          description: 語言需求
+          example: ["中文","英文"]
+        headcount_need:
+          type: integer
+          description: 需求人數
+          example: 30
+        headcount_got:
+          type: integer
+          description: 已到位人數
+          example: 18
+        headcount_unit:
+          type: string
+          nullable: true
+          description: 人數單位
+          example: 人
+        role_status:
+          type: string
+          description: 人力填補狀態 (completed, pending, partial)
+          example: partial
+        shift_start_ts:
+          type: integer
+          format: int64
+          nullable: true
+          description: 班次開始時間 (Unix Timestamp 秒)
+          example: 1759164503
+        shift_end_ts:
+          type: integer
+          format: int64
+          nullable: true
+          description: 班次結束時間 (Unix Timestamp 秒)
+          example: 1759168103
+        shift_notes:
+          type: string
+          nullable: true
+          description: 班次備註
+          example: 需自備手套與安全鞋
+        assignment_timestamp:
+          type: integer
+          format: int64
+          nullable: true
+          description: 派工/報到時間 (Unix Timestamp 秒)
+          example: 1759164503
+        assignment_count:
+          type: integer
+          nullable: true
+          description: 本次派工人數
+          example: 10
+        assignment_notes:
+          type: string
+          nullable: true
+          description: 派工備註
+          example: 到現場與組長報到
+        total_roles_in_request:
+          type: integer
+          nullable: true
+          description: 此需求總人力角色數
+          example: 3
+          readOnly: true
+        completed_roles_in_request:
+          type: integer
+          nullable: true
+          description: 此需求已完成人力角色數
+          example: 2
+          readOnly: true
+        pending_roles_in_request:
+          type: integer
+          nullable: true
+          description: 此需求待完成人力角色數
+          example: 1
+          readOnly: true
+        total_requests:
+          type: integer
+          nullable: true
+          description: 系統總人力需求數 (統計值)
+          example: 150
+          readOnly: true
+        active_requests:
+          type: integer
+          nullable: true
+          description: 系統進行中人力需求數 (統計值)
+          example: 45
+          readOnly: true
+        completed_requests:
+          type: integer
+          nullable: true
+          description: 系統已完成人力需求數 (統計值)
+          example: 100
+          readOnly: true
+        cancelled_requests:
+          type: integer
+          nullable: true
+          description: 系統已取消人力需求數 (統計值)
+          example: 5
+          readOnly: true
+        total_roles:
+          type: integer
+          nullable: true
+          description: 系統總人力角色項目數 (統計值)
+          example: 500
+          readOnly: true
+        completed_roles:
+          type: integer
+          nullable: true
+          description: 系統已完成人力角色數 (統計值)
+          example: 300
+          readOnly: true
+        pending_roles:
+          type: integer
+          nullable: true
+          description: 系統待完成人力角色數 (統計值)
+          example: 200
+          readOnly: true
+        urgent_requests:
+          type: integer
+          nullable: true
+          description: 系統緊急人力需求數 (統計值)
+          example: 12
+          readOnly: true
+        medical_requests:
+          type: integer
+          nullable: true
+          description: 系統醫療人力需求數 (統計值)
+          example: 25
+          readOnly: true
     HumanResourceCreate:
       type: object
       required: [org,address,phone,status,is_completed,role_name,role_type,headcount_need,headcount_got,role_status]
