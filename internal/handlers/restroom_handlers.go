@@ -69,14 +69,14 @@ func (h *Handler) CreateRestroom(c *gin.Context) {
 	}
 	ctx := context.Background()
 	var id string
-	var created, updated time.Time
+	var created, updated int64
 	err := h.pool.QueryRow(ctx, `insert into restrooms(name,address,phone,facility_type,opening_hours,is_free,male_units,female_units,unisex_units,accessible_units,has_water,has_lighting,status,cleanliness,last_cleaned,facilities,distance_to_disaster_area,notes,info_source,lat,lng) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::text[],$17,$18,$19,$20,$21) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
 		in.Name, in.Address, in.Phone, in.FacilityType, in.OpeningHours, isFree, in.MaleUnits, in.FemaleUnits, in.UnisexUnits, in.AccessibleUnits, hasWater, hasLighting, in.Status, in.Cleanliness, lastCleaned, in.Facilities, in.DistanceToDisasterArea, in.Notes, in.InfoSource, lat, lng).Scan(&id, &created, &updated)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	out := models.Restroom{ID: id, Name: in.Name, Address: in.Address, Phone: in.Phone, FacilityType: in.FacilityType, OpeningHours: in.OpeningHours, IsFree: isFree, MaleUnits: in.MaleUnits, FemaleUnits: in.FemaleUnits, UnisexUnits: in.UnisexUnits, AccessibleUnits: in.AccessibleUnits, HasWater: hasWater, HasLighting: hasLighting, Status: in.Status, Cleanliness: in.Cleanliness, Facilities: in.Facilities, DistanceToDisasterArea: in.DistanceToDisasterArea, Notes: in.Notes, InfoSource: in.InfoSource, CreatedAt: created.Unix(), UpdatedAt: updated.Unix()}
+	out := models.Restroom{ID: id, Name: in.Name, Address: in.Address, Phone: in.Phone, FacilityType: in.FacilityType, OpeningHours: in.OpeningHours, IsFree: isFree, MaleUnits: in.MaleUnits, FemaleUnits: in.FemaleUnits, UnisexUnits: in.UnisexUnits, AccessibleUnits: in.AccessibleUnits, HasWater: hasWater, HasLighting: hasLighting, Status: in.Status, Cleanliness: in.Cleanliness, Facilities: in.Facilities, DistanceToDisasterArea: in.DistanceToDisasterArea, Notes: in.Notes, InfoSource: in.InfoSource, CreatedAt: created, UpdatedAt: updated}
 	if lastCleaned != nil {
 		ts := lastCleaned.Unix()
 		out.LastCleaned = &ts

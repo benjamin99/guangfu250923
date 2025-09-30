@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"guangfu250923/internal/models"
 
@@ -49,14 +48,14 @@ func (h *Handler) CreateAccommodation(c *gin.Context) {
 		lng = in.Coordinates.Lng
 	}
 	var id string
-	var created, updated time.Time
+	var created, updated int64
 	err := h.pool.QueryRow(ctx, `insert into accommodations(township,name,has_vacancy,available_period,restrictions,contact_info,room_info,address,pricing,info_source,notes,capacity,status,registration_method,facilities,distance_to_disaster_area,lat,lng) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::text[],$16,$17,$18) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
 		in.Township, in.Name, in.HasVacancy, in.AvailablePeriod, in.Restrictions, in.ContactInfo, in.RoomInfo, in.Address, in.Pricing, in.InfoSource, in.Notes, in.Capacity, in.Status, in.RegistrationMethod, in.Facilities, in.DistanceToDisaster, lat, lng).Scan(&id, &created, &updated)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	out := models.Accommodation{ID: id, Township: in.Township, Name: in.Name, HasVacancy: in.HasVacancy, AvailablePeriod: in.AvailablePeriod, Restrictions: in.Restrictions, ContactInfo: in.ContactInfo, RoomInfo: in.RoomInfo, Address: in.Address, Pricing: in.Pricing, InfoSource: in.InfoSource, Notes: in.Notes, Capacity: in.Capacity, Status: in.Status, RegistrationMethod: in.RegistrationMethod, Facilities: in.Facilities, DistanceToDisasterArea: in.DistanceToDisaster, CreatedAt: created.Unix(), UpdatedAt: updated.Unix()}
+	out := models.Accommodation{ID: id, Township: in.Township, Name: in.Name, HasVacancy: in.HasVacancy, AvailablePeriod: in.AvailablePeriod, Restrictions: in.Restrictions, ContactInfo: in.ContactInfo, RoomInfo: in.RoomInfo, Address: in.Address, Pricing: in.Pricing, InfoSource: in.InfoSource, Notes: in.Notes, Capacity: in.Capacity, Status: in.Status, RegistrationMethod: in.RegistrationMethod, Facilities: in.Facilities, DistanceToDisasterArea: in.DistanceToDisaster, CreatedAt: created, UpdatedAt: updated}
 	if lat != nil || lng != nil {
 		out.Coordinates = &struct {
 			Lat *float64 `json:"lat"`

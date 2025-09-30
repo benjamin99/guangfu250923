@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"guangfu250923/internal/models"
 
@@ -48,16 +47,14 @@ func (h *Handler) CreateShelter(c *gin.Context) {
 	}
 	ctx := context.Background()
 	var id string
-	var created, updated time.Time
+	var created, updated int64
 	err := h.pool.QueryRow(ctx, `insert into shelters(name,location,phone,link,status,capacity,current_occupancy,available_spaces,facilities,contact_person,notes,lat,lng,opening_hours) values($1,$2,$3,$4,$5,$6,$7,$8,$9::text[],$10,$11,$12,$13,$14) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
 		in.Name, in.Location, in.Phone, in.Link, in.Status, in.Capacity, in.CurrentOccupancy, in.AvailableSpaces, in.Facilities, in.ContactPerson, in.Notes, lat, lng, in.OpeningHours).Scan(&id, &created, &updated)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	createdUnix := created.Unix()
-	updatedUnix := updated.Unix()
-	out := models.Shelter{ID: id, Name: in.Name, Location: in.Location, Phone: in.Phone, Link: in.Link, Status: in.Status, Capacity: in.Capacity, CurrentOccupancy: in.CurrentOccupancy, AvailableSpaces: in.AvailableSpaces, Facilities: in.Facilities, ContactPerson: in.ContactPerson, Notes: in.Notes, OpeningHours: in.OpeningHours, CreatedAt: createdUnix, UpdatedAt: updatedUnix}
+	out := models.Shelter{ID: id, Name: in.Name, Location: in.Location, Phone: in.Phone, Link: in.Link, Status: in.Status, Capacity: in.Capacity, CurrentOccupancy: in.CurrentOccupancy, AvailableSpaces: in.AvailableSpaces, Facilities: in.Facilities, ContactPerson: in.ContactPerson, Notes: in.Notes, OpeningHours: in.OpeningHours, CreatedAt: created, UpdatedAt: updated}
 	if lat != nil || lng != nil {
 		out.Coordinates = &struct {
 			Lat *float64 `json:"lat"`

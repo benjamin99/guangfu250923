@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"guangfu250923/internal/models"
 
@@ -66,14 +65,14 @@ func (h *Handler) CreateShowerStation(c *gin.Context) {
 		genderJSON, _ = json.Marshal(in.GenderSchedule)
 	}
 	var id string
-	var created, updated time.Time
+	var created, updated int64
 	err := h.pool.QueryRow(ctx, `insert into shower_stations(name,address,phone,facility_type,time_slots,gender_schedule,available_period,capacity,is_free,pricing,notes,info_source,status,facilities,distance_to_guangfu,requires_appointment,contact_method,lat,lng) values($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14::text[],$15,$16,$17,$18,$19) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
 		in.Name, in.Address, in.Phone, in.FacilityType, in.TimeSlots, genderJSON, in.AvailablePeriod, in.Capacity, isFree, in.Pricing, in.Notes, in.InfoSource, in.Status, in.Facilities, in.DistanceToGuangfu, reqApp, in.ContactMethod, lat, lng).Scan(&id, &created, &updated)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	out := models.ShowerStation{ID: id, Name: in.Name, Address: in.Address, Phone: in.Phone, FacilityType: in.FacilityType, TimeSlots: in.TimeSlots, AvailablePeriod: in.AvailablePeriod, Capacity: in.Capacity, IsFree: isFree, Pricing: in.Pricing, Notes: in.Notes, InfoSource: in.InfoSource, Status: in.Status, Facilities: in.Facilities, DistanceToGuangfu: in.DistanceToGuangfu, RequiresAppointment: reqApp, ContactMethod: in.ContactMethod, CreatedAt: created.Unix(), UpdatedAt: updated.Unix()}
+	out := models.ShowerStation{ID: id, Name: in.Name, Address: in.Address, Phone: in.Phone, FacilityType: in.FacilityType, TimeSlots: in.TimeSlots, AvailablePeriod: in.AvailablePeriod, Capacity: in.Capacity, IsFree: isFree, Pricing: in.Pricing, Notes: in.Notes, InfoSource: in.InfoSource, Status: in.Status, Facilities: in.Facilities, DistanceToGuangfu: in.DistanceToGuangfu, RequiresAppointment: reqApp, ContactMethod: in.ContactMethod, CreatedAt: created, UpdatedAt: updated}
 	if in.GenderSchedule != nil {
 		out.GenderSchedule = &struct {
 			Male   []string `json:"male"`

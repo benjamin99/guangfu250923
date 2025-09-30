@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"guangfu250923/internal/models"
 
@@ -56,14 +55,14 @@ func (h *Handler) CreateWaterRefillStation(c *gin.Context) {
 	}
 	ctx := context.Background()
 	var id string
-	var created, updated time.Time
+	var created, updated int64
 	err := h.pool.QueryRow(ctx, `insert into water_refill_stations(name,address,phone,water_type,opening_hours,is_free,container_required,daily_capacity,status,water_quality,facilities,accessibility,distance_to_disaster_area,notes,info_source,lat,lng) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::text[],$12,$13,$14,$15,$16,$17) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
 		in.Name, in.Address, in.Phone, in.WaterType, in.OpeningHours, isFree, in.ContainerRequired, in.DailyCapacity, in.Status, in.WaterQuality, in.Facilities, accessible, in.DistanceToDisasterArea, in.Notes, in.InfoSource, lat, lng).Scan(&id, &created, &updated)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	out := models.WaterRefillStation{ID: id, Name: in.Name, Address: in.Address, Phone: in.Phone, WaterType: in.WaterType, OpeningHours: in.OpeningHours, IsFree: isFree, ContainerRequired: in.ContainerRequired, DailyCapacity: in.DailyCapacity, Status: in.Status, WaterQuality: in.WaterQuality, Facilities: in.Facilities, Accessibility: accessible, DistanceToDisasterArea: in.DistanceToDisasterArea, Notes: in.Notes, InfoSource: in.InfoSource, CreatedAt: created.Unix(), UpdatedAt: updated.Unix()}
+	out := models.WaterRefillStation{ID: id, Name: in.Name, Address: in.Address, Phone: in.Phone, WaterType: in.WaterType, OpeningHours: in.OpeningHours, IsFree: isFree, ContainerRequired: in.ContainerRequired, DailyCapacity: in.DailyCapacity, Status: in.Status, WaterQuality: in.WaterQuality, Facilities: in.Facilities, Accessibility: accessible, DistanceToDisasterArea: in.DistanceToDisasterArea, Notes: in.Notes, InfoSource: in.InfoSource, CreatedAt: created, UpdatedAt: updated}
 	if lat != nil || lng != nil {
 		out.Coordinates = &struct {
 			Lat *float64 `json:"lat"`

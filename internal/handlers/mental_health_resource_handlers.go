@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"guangfu250923/internal/models"
 
@@ -57,14 +56,14 @@ func (h *Handler) CreateMentalHealthResource(c *gin.Context) {
 		lng = in.Coordinates.Lng
 	}
 	var id string
-	var created, updated time.Time
+	var created, updated int64
 	err := h.pool.QueryRow(ctx, `insert into mental_health_resources(duration_type,name,service_format,service_hours,contact_info,website_url,target_audience,specialties,languages,is_free,location,lat,lng,status,capacity,waiting_time,notes,emergency_support) values($1,$2,$3,$4,$5,$6,$7::text[],$8::text[],$9::text[],$10,$11,$12,$13,$14,$15,$16,$17,$18) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
 		in.DurationType, in.Name, in.ServiceFormat, in.ServiceHours, in.ContactInfo, in.WebsiteURL, in.TargetAudience, in.Specialties, in.Languages, isFree, in.Location, lat, lng, in.Status, in.Capacity, in.WaitingTime, in.Notes, emergency).Scan(&id, &created, &updated)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	out := models.MentalHealthResource{ID: id, DurationType: in.DurationType, Name: in.Name, ServiceFormat: in.ServiceFormat, ServiceHours: in.ServiceHours, ContactInfo: in.ContactInfo, WebsiteURL: in.WebsiteURL, TargetAudience: in.TargetAudience, Specialties: in.Specialties, Languages: in.Languages, IsFree: isFree, Location: in.Location, Status: in.Status, Capacity: in.Capacity, WaitingTime: in.WaitingTime, Notes: in.Notes, EmergencySupport: emergency, CreatedAt: created.Unix(), UpdatedAt: updated.Unix()}
+	out := models.MentalHealthResource{ID: id, DurationType: in.DurationType, Name: in.Name, ServiceFormat: in.ServiceFormat, ServiceHours: in.ServiceHours, ContactInfo: in.ContactInfo, WebsiteURL: in.WebsiteURL, TargetAudience: in.TargetAudience, Specialties: in.Specialties, Languages: in.Languages, IsFree: isFree, Location: in.Location, Status: in.Status, Capacity: in.Capacity, WaitingTime: in.WaitingTime, Notes: in.Notes, EmergencySupport: emergency, CreatedAt: created, UpdatedAt: updated}
 	if lat != nil || lng != nil {
 		out.Coordinates = &struct {
 			Lat *float64 `json:"lat"`
