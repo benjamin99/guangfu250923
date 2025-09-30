@@ -261,56 +261,56 @@ type ShowerStation struct {
 
 // WaterRefillStation represents water_refill_stations table row
 type WaterRefillStation struct {
-	ID                    string   `json:"id"`
-	Name                  string   `json:"name"`
-	Address               string   `json:"address"`
-	Phone                 *string  `json:"phone"`
-	WaterType             string   `json:"water_type"`
-	OpeningHours          string   `json:"opening_hours"`
-	IsFree                bool     `json:"is_free"`
-	ContainerRequired     *string  `json:"container_required"`
-	DailyCapacity         *int     `json:"daily_capacity"`
-	Status                string   `json:"status"`
-	WaterQuality          *string  `json:"water_quality"`
-	Facilities            []string `json:"facilities"`
-	Accessibility         bool     `json:"accessibility"`
-	DistanceToDisasterArea *string `json:"distance_to_disaster_area"`
-	Notes                 *string  `json:"notes"`
-	InfoSource            *string  `json:"info_source"`
-	Coordinates           *struct {
+	ID                     string   `json:"id"`
+	Name                   string   `json:"name"`
+	Address                string   `json:"address"`
+	Phone                  *string  `json:"phone"`
+	WaterType              string   `json:"water_type"`
+	OpeningHours           string   `json:"opening_hours"`
+	IsFree                 bool     `json:"is_free"`
+	ContainerRequired      *string  `json:"container_required"`
+	DailyCapacity          *int     `json:"daily_capacity"`
+	Status                 string   `json:"status"`
+	WaterQuality           *string  `json:"water_quality"`
+	Facilities             []string `json:"facilities"`
+	Accessibility          bool     `json:"accessibility"`
+	DistanceToDisasterArea *string  `json:"distance_to_disaster_area"`
+	Notes                  *string  `json:"notes"`
+	InfoSource             *string  `json:"info_source"`
+	Coordinates            *struct {
 		Lat *float64 `json:"lat"`
 		Lng *float64 `json:"lng"`
 	} `json:"coordinates"`
-	CreatedAt             int64    `json:"created_at"`
-	UpdatedAt             int64    `json:"updated_at"`
+	CreatedAt int64 `json:"created_at"`
+	UpdatedAt int64 `json:"updated_at"`
 }
 
 // Restroom represents restrooms table row
 type Restroom struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Address     string  `json:"address"`
-	Phone       *string `json:"phone"`
-	FacilityType string `json:"facility_type"`
-	OpeningHours string `json:"opening_hours"`
-	IsFree      bool    `json:"is_free"`
-	MaleUnits   *int    `json:"male_units"`
-	FemaleUnits *int    `json:"female_units"`
-	UnisexUnits *int    `json:"unisex_units"`
-	AccessibleUnits *int `json:"accessible_units"`
-	HasWater    bool    `json:"has_water"`
-	HasLighting bool    `json:"has_lighting"`
-	Status      string  `json:"status"`
-	Cleanliness *string `json:"cleanliness"`
-	LastCleaned *int64  `json:"last_cleaned"`
-	Facilities  []string `json:"facilities"`
-	DistanceToDisasterArea *string `json:"distance_to_disaster_area"`
-	Notes       *string `json:"notes"`
-	InfoSource  *string `json:"info_source"`
-	Coordinates *struct {
+	ID                     string   `json:"id"`
+	Name                   string   `json:"name"`
+	Address                string   `json:"address"`
+	Phone                  *string  `json:"phone"`
+	FacilityType           string   `json:"facility_type"`
+	OpeningHours           string   `json:"opening_hours"`
+	IsFree                 bool     `json:"is_free"`
+	MaleUnits              *int     `json:"male_units"`
+	FemaleUnits            *int     `json:"female_units"`
+	UnisexUnits            *int     `json:"unisex_units"`
+	AccessibleUnits        *int     `json:"accessible_units"`
+	HasWater               bool     `json:"has_water"`
+	HasLighting            bool     `json:"has_lighting"`
+	Status                 string   `json:"status"`
+	Cleanliness            *string  `json:"cleanliness"`
+	LastCleaned            *int64   `json:"last_cleaned"`
+	Facilities             []string `json:"facilities"`
+	DistanceToDisasterArea *string  `json:"distance_to_disaster_area"`
+	Notes                  *string  `json:"notes"`
+	InfoSource             *string  `json:"info_source"`
+	Coordinates            *struct {
 		Lat *float64 `json:"lat"`
 		Lng *float64 `json:"lng"`
 	} `json:"coordinates"`
-	CreatedAt   int64   `json:"created_at"`
-	UpdatedAt   int64   `json:"updated_at"`
+	CreatedAt int64 `json:"created_at"`
+	UpdatedAt int64 `json:"updated_at"`
 }
