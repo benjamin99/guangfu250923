@@ -13,15 +13,15 @@ import (
 )
 
 type supplyCreateInput struct {
-	Name     *string            `json:"name"`
-	Address  *string            `json:"address"`
-	Phone    *string            `json:"phone"`
-	Notes    *string            `json:"notes"`
-	Supplies *suppilyItemInline `json:"supplies"`
+	Name     *string           `json:"name"`
+	Address  *string           `json:"address"`
+	Phone    *string           `json:"phone"`
+	Notes    *string           `json:"notes"`
+	Supplies *supplyItemInline `json:"supplies"`
 }
 
 // Inline single item (前端需求: POST /supplies 時直接附上一個 supplies 物資項目)
-type suppilyItemInline struct {
+type supplyItemInline struct {
 	Tag           *string `json:"tag"`
 	Name          *string `json:"name"`
 	ReceivedCount *int    `json:"recieved_count"` // 注意: 前端拼字 recieved_count
@@ -29,8 +29,8 @@ type suppilyItemInline struct {
 	Unit          *string `json:"unit"`
 }
 
-type suppilyItemCreateInput struct { // 保留原獨立建立 endpoint 使用
-	SuppilyID  string  `json:"suppily_id" binding:"required"`
+type supplyItemCreateInput struct { // 保留原獨立建立 endpoint 使用
+	SupplyID   string  `json:"supply_id" binding:"required"`
 	Tag        *string `json:"tag"`
 	Name       *string `json:"name"`
 	TotalCount int     `json:"total_count" binding:"required"`
@@ -56,7 +56,7 @@ func (h *Handler) CreateSupply(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	var createdItems []models.SuppilyItem
+	var createdItems []models.SupplyItem
 	if in.Supplies != nil {
 		received := 0
 		if in.Supplies.ReceivedCount != nil {
@@ -67,11 +67,11 @@ func (h *Handler) CreateSupply(c *gin.Context) {
 			return
 		}
 		var itemID string
-		if err := tx.QueryRow(ctx, `insert into suppily_items(suppily_id,tag,name,received_count,total_number,unit) values($1,$2,$3,$4,$5,$6) returning id`, id, in.Supplies.Tag, in.Supplies.Name, received, in.Supplies.TotalCount, in.Supplies.Unit).Scan(&itemID); err != nil {
+		if err := tx.QueryRow(ctx, `insert into supply_items(supply_id,tag,name,received_count,total_number,unit) values($1,$2,$3,$4,$5,$6) returning id`, id, in.Supplies.Tag, in.Supplies.Name, received, in.Supplies.TotalCount, in.Supplies.Unit).Scan(&itemID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		createdItems = append(createdItems, models.SuppilyItem{ID: itemID, SuppilyID: id, Tag: in.Supplies.Tag, Name: in.Supplies.Name, ReceivedCount: received, TotalCount: in.Supplies.TotalCount, Unit: in.Supplies.Unit})
+		createdItems = append(createdItems, models.SupplyItem{ID: itemID, SupplyID: id, Tag: in.Supplies.Tag, Name: in.Supplies.Name, ReceivedCount: received, TotalCount: in.Supplies.TotalCount, Unit: in.Supplies.Unit})
 	}
 	if err := tx.Commit(ctx); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -115,7 +115,7 @@ func (h *Handler) ListSupplies(c *gin.Context) {
 		var tag, iname, unit *string
 		var rc, tc int
 		var itemID, suppID string
-		if errItem := h.pool.QueryRow(ctx, `select id,suppily_id,tag,name,received_count,total_number,unit from suppily_items where suppily_id=$1 order by id asc limit 1`, s.ID).Scan(&itemID, &suppID, &tag, &iname, &rc, &tc, &unit); errItem == nil {
+		if errItem := h.pool.QueryRow(ctx, `select id,supply_id,tag,name,received_count,total_number,unit from supply_items where supply_id=$1 order by id asc limit 1`, s.ID).Scan(&itemID, &suppID, &tag, &iname, &rc, &tc, &unit); errItem == nil {
 			list = append(list, models.Supply{ID: s.ID, Name: s.Name, Address: s.Address, Phone: s.Phone, Notes: s.Notes, CreatedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt})
 		} else {
 			list = append(list, s)
@@ -163,17 +163,17 @@ func (h *Handler) GetSupply(c *gin.Context) {
 	s.CreatedAt = created
 	s.UpdatedAt = updated
 	// fetch ALL items (could be zero)
-	rows, err := h.pool.Query(ctx, `select id,suppily_id,tag,name,received_count,total_number,unit from suppily_items where suppily_id=$1 order by id asc`, s.ID)
+	rows, err := h.pool.Query(ctx, `select id,supply_id,tag,name,received_count,total_number,unit from supply_items where supply_id=$1 order by id asc`, s.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
-	items := []models.SuppilyItem{}
+	items := []models.SupplyItem{}
 	for rows.Next() {
-		var it models.SuppilyItem
+		var it models.SupplyItem
 		var tag, iname, unit *string
-		if err := rows.Scan(&it.ID, &it.SuppilyID, &tag, &iname, &it.ReceivedCount, &it.TotalCount, &unit); err != nil {
+		if err := rows.Scan(&it.ID, &it.SupplyID, &tag, &iname, &it.ReceivedCount, &it.TotalCount, &unit); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -249,15 +249,15 @@ func (h *Handler) PatchSupply(c *gin.Context) {
 	c.JSON(http.StatusOK, s)
 }
 
-func (h *Handler) CreateSuppilyItem(c *gin.Context) {
-	var in suppilyItemCreateInput
+func (h *Handler) CreateSupplyItem(c *gin.Context) {
+	var in supplyItemCreateInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	ctx := context.Background()
 	var id string
-	err := h.pool.QueryRow(ctx, `insert into suppily_items(suppily_id,tag,name,total_number,unit) values($1,$2,$3,$4,$5) returning id`, in.SuppilyID, in.Tag, in.Name, in.TotalCount, in.Unit).Scan(&id)
+	err := h.pool.QueryRow(ctx, `insert into supply_items(supply_id,tag,name,total_number,unit) values($1,$2,$3,$4,$5) returning id`, in.SupplyID, in.Tag, in.Name, in.TotalCount, in.Unit).Scan(&id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -265,19 +265,19 @@ func (h *Handler) CreateSuppilyItem(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
-func (h *Handler) ListSuppilyItems(c *gin.Context) {
+func (h *Handler) ListSupplyItems(c *gin.Context) {
 	limit := parsePositiveInt(c.Query("limit"), 100, 1, 500)
 	offset := parsePositiveInt(c.Query("offset"), 0, 0, 1000000)
-	supplyID := c.Query("suppily_id")
+	supplyID := c.Query("supply_id")
 	ctx := context.Background()
 	filters := []string{}
 	args := []interface{}{}
 	if supplyID != "" {
-		filters = append(filters, "suppily_id=$"+strconv.Itoa(len(args)+1))
+		filters = append(filters, "supply_id=$"+strconv.Itoa(len(args)+1))
 		args = append(args, supplyID)
 	}
-	countQuery := "select count(*) from suppily_items"
-	dataQuery := "select id,suppily_id,tag,name,received_count,total_number,unit from suppily_items"
+	countQuery := "select count(*) from supply_items"
+	dataQuery := "select id,supply_id,tag,name,received_count,total_number,unit from supply_items"
 	if len(filters) > 0 {
 		where := " where " + strings.Join(filters, " and ")
 		countQuery += where
@@ -296,11 +296,11 @@ func (h *Handler) ListSuppilyItems(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-	list := []models.SuppilyItem{}
+	list := []models.SupplyItem{}
 	for rows.Next() {
-		var it models.SuppilyItem
+		var it models.SupplyItem
 		var tag, name, unit *string
-		if err := rows.Scan(&it.ID, &it.SuppilyID, &tag, &name, &it.ReceivedCount, &it.TotalCount, &unit); err != nil {
+		if err := rows.Scan(&it.ID, &it.SupplyID, &tag, &name, &it.ReceivedCount, &it.TotalCount, &unit); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -329,7 +329,7 @@ func (h *Handler) ListSuppilyItems(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Collection", "totalItems": total, "member": list, "limit": limit, "offset": offset, "next": next, "previous": prev})
 }
 
-type suppilyItemPatchInput struct {
+type supplyItemPatchInput struct {
 	Tag           *string `json:"tag"`
 	Name          *string `json:"name"`
 	ReceivedCount *int    `json:"recieved_count"`
@@ -337,9 +337,9 @@ type suppilyItemPatchInput struct {
 	Unit          *string `json:"unit"`
 }
 
-func (h *Handler) PatchSuppilyItem(c *gin.Context) {
+func (h *Handler) PatchSupplyItem(c *gin.Context) {
 	id := c.Param("id")
-	var in suppilyItemPatchInput
+	var in supplyItemPatchInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -348,7 +348,7 @@ func (h *Handler) PatchSuppilyItem(c *gin.Context) {
 	if in.ReceivedCount != nil || in.TotalNumber != nil {
 		ctxCheck := context.Background()
 		var existingReceived, existingTotal int
-		if err := h.pool.QueryRow(ctxCheck, `select received_count,total_number from suppily_items where id=$1`, id).Scan(&existingReceived, &existingTotal); err != nil {
+		if err := h.pool.QueryRow(ctxCheck, "select received_count,total_number from supply_items where id=$1", id).Scan(&existingReceived, &existingTotal); err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 				return
@@ -396,13 +396,13 @@ func (h *Handler) PatchSuppilyItem(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields"})
 		return
 	}
-	query := "update suppily_items set " + strings.Join(setParts, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,suppily_id,tag,name,received_count,total_number,unit"
+	query := "update supply_items set " + strings.Join(setParts, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,supply_id,tag,name,received_count,total_number,unit"
 	args = append(args, id)
 	ctx := context.Background()
 	row := h.pool.QueryRow(ctx, query, args...)
-	var it models.SuppilyItem
+	var it models.SupplyItem
 	var tag, name, unit *string
-	if err := row.Scan(&it.ID, &it.SuppilyID, &tag, &name, &it.ReceivedCount, &it.TotalCount, &unit); err != nil {
+	if err := row.Scan(&it.ID, &it.SupplyID, &tag, &name, &it.ReceivedCount, &it.TotalCount, &unit); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
@@ -416,13 +416,13 @@ func (h *Handler) PatchSuppilyItem(c *gin.Context) {
 	c.JSON(http.StatusOK, it)
 }
 
-func (h *Handler) GetSuppilyItem(c *gin.Context) {
+func (h *Handler) GetSupplyItem(c *gin.Context) {
 	id := c.Param("id")
 	ctx := context.Background()
-	row := h.pool.QueryRow(ctx, `select id,suppily_id,tag,name,received_count,total_number,unit from suppily_items where id=$1`, id)
-	var it models.SuppilyItem
+	row := h.pool.QueryRow(ctx, `select id,supply_id,tag,name,received_count,total_number,unit from supply_items where id=$1`, id)
+	var it models.SupplyItem
 	var tag, name, unit *string
-	if err := row.Scan(&it.ID, &it.SuppilyID, &tag, &name, &it.ReceivedCount, &it.TotalCount, &unit); err != nil {
+	if err := row.Scan(&it.ID, &it.SupplyID, &tag, &name, &it.ReceivedCount, &it.TotalCount, &unit); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
@@ -464,7 +464,7 @@ func (h *Handler) DistributeSupplyItems(c *gin.Context) {
 		return
 	}
 	defer tx.Rollback(ctx)
-	updated := []models.SuppilyItem{}
+	updated := []models.SupplyItem{}
 	for _, itm := range in {
 		if itm.Count <= 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "count must be > 0", "id": itm.ID})
@@ -473,7 +473,7 @@ func (h *Handler) DistributeSupplyItems(c *gin.Context) {
 		var curSuppID string
 		var received, total int
 		// lock row
-		if err := tx.QueryRow(ctx, `select suppily_id,received_count,total_number from suppily_items where id=$1 for update`, itm.ID).Scan(&curSuppID, &received, &total); err != nil {
+		if err := tx.QueryRow(ctx, `select supply_id,received_count,total_number from supply_items where id=$1 for update`, itm.ID).Scan(&curSuppID, &received, &total); err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "item not found", "id": itm.ID})
 				return
@@ -490,9 +490,9 @@ func (h *Handler) DistributeSupplyItems(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "exceeds total_count", "id": itm.ID, "recieved_count": received, "total_count": total, "attempt_add": itm.Count})
 			return
 		}
-		var out models.SuppilyItem
+		var out models.SupplyItem
 		var tag, name, unit *string
-		if err := tx.QueryRow(ctx, `update suppily_items set received_count=$1 where id=$2 returning id,suppily_id,tag,name,received_count,total_number,unit`, newReceived, itm.ID).Scan(&out.ID, &out.SuppilyID, &tag, &name, &out.ReceivedCount, &out.TotalCount, &unit); err != nil {
+		if err := tx.QueryRow(ctx, `update supply_items set received_count=$1 where id=$2 returning id,supply_id,tag,name,received_count,total_number,unit`, newReceived, itm.ID).Scan(&out.ID, &out.SupplyID, &tag, &name, &out.ReceivedCount, &out.TotalCount, &unit); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "id": itm.ID})
 			return
 		}

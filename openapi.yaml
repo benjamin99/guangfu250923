@@ -661,20 +661,20 @@ paths:
                 type: object
                 required: [id,count]
                 properties:
-                  id: { type: string, format: uuid, description: suppily_item ID }
+                  id: { type: string, format: uuid, description: supply_item ID }
                   count: { type: integer, minimum: 1, description: 本次配送新增的數量 }
       responses:
-        '200': { description: 成功, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SuppilyItem' } } } } }
+        '200': { description: 成功, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SupplyItem' } } } } }
         '400': { description: 輸入錯誤或超過需求 }
         '404': { description: 找不到 }
-  /suppily_items:
+  /supply_items:
     get:
-      operationId: listSuppilyItems
+      operationId: listSupplyItems
       summary: 取得物資項目清單 (分頁)
-      description: 分頁列出所有物資項目，可用 suppily_id 過濾特定供應單；採 JSON-LD Collection 格式。
+      description: 分頁列出所有物資項目，可用 supply_id 過濾特定供應單；採 JSON-LD Collection 格式。
       parameters:
         - in: query
-          name: suppily_id
+          name: supply_id
           schema: { type: string, format: uuid }
           description: 過濾指定供應單底下的項目
         - in: query
@@ -684,22 +684,22 @@ paths:
           name: offset
           schema: { type: integer, minimum: 0, default: 0 }
       responses:
-        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SuppilyItemCollection' } } } }
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyItemCollection' } } } }
     post:
-      operationId: createSuppilyItem
+      operationId: createSupplyItem
       summary: 建立物資項目
       description: 為既有供應單新增一筆物資項目；初始 recieved_count 預設為 0。
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/SuppilyItemCreate' }
+            schema: { $ref: '#/components/schemas/SupplyItemCreate' }
       responses:
         '201': { description: 建立成功, content: { application/json: { schema: { type: object, properties: { id: { type: string, format: uuid } } } } } }
         '400': { description: 輸入錯誤 }
-  /suppily_items/{id}:
+  /supply_items/{id}:
     get:
-      operationId: getSuppilyItem
+      operationId: getSupplyItem
       summary: 取得單一物資項目
       description: 依物資項目 UUID 取得其詳細資訊。
       parameters:
@@ -708,24 +708,24 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SuppilyItem' } } } }
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyItem' } } } }
         '404': { description: 找不到 }
     patch:
-      operationId: patchSuppilyItem
+      operationId: patchSupplyItem
       summary: 更新物資項目 (部分欄位)
       description: 部分更新物資項目欄位；若更新 recieved_count 則不得超過 total_count。
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/SuppilyItemPatch' }
+            schema: { $ref: '#/components/schemas/SupplyItemPatch' }
       parameters:
         - in: path
           name: id
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/SuppilyItem' } } } }
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyItem' } } } }
         '400': { description: 輸入錯誤 }
         '404': { description: 找不到 }
 components:
@@ -1937,7 +1937,7 @@ components:
         supplies:
           type: array
           description: 供應單全部物資項目 (可能為空陣列)
-          items: { $ref: '#/components/schemas/SuppilyItem' }
+          items: { $ref: '#/components/schemas/SupplyItem' }
     SupplyCreate:
       type: object
       properties:
@@ -1970,26 +1970,26 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/Supply' }
-    SuppilyItem:
+    SupplyItem:
       type: object
       properties:
         id: { type: string, format: uuid }
-        suppily_id: { type: string, format: uuid }
+        supply_id: { type: string, format: uuid }
         tag: { type: string, nullable: true }
         name: { type: string, nullable: true }
         recieved_count: { type: integer }
         total_count: { type: integer }
         unit: { type: string, nullable: true }
-    SuppilyItemCreate:
+    SupplyItemCreate:
       type: object
-      required: [suppily_id,total_count]
+      required: [supply_id,total_count]
       properties:
-        suppily_id: { type: string, format: uuid }
+        supply_id: { type: string, format: uuid }
         tag: { type: string, nullable: true }
         name: { type: string, nullable: true }
         total_count: { type: integer }
         unit: { type: string, nullable: true }
-    SuppilyItemPatch:
+    SupplyItemPatch:
       type: object
       properties:
         tag: { type: string, nullable: true }
@@ -1997,11 +1997,11 @@ components:
         recieved_count: { type: integer }
         total_count: { type: integer }
         unit: { type: string, nullable: true }
-    SuppilyItemCollection:
+    SupplyItemCollection:
       allOf:
         - $ref: '#/components/schemas/CollectionBase'
         - type: object
           properties:
             member:
               type: array
-              items: { $ref: '#/components/schemas/SuppilyItem' }
+              items: { $ref: '#/components/schemas/SupplyItem' }

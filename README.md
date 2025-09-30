@@ -2,12 +2,10 @@
 
 以快速支援災後資訊蒐集、物資供應追蹤、人力/設施資源盤點為目標的 API。採用 Go + Gin + PostgreSQL，提供 JSON-LD 風格的分頁集合回應格式。
 
-> 目前已淘汰舊有 `/requests` 需求主檔 + 傳統 supplies 聚合模式，改為「供應單 (Supply)」+「物資項目 (SuppilyItem)」的較簡化模型。
-
 ## 主要功能模組
 | 模組 | Path 前綴 | 說明 |
 |------|-----------|------|
-| 供應單 / 物資 | `/supplies`, `/suppily_items` | 建立供應單、單筆/多筆物資項目管理、批次配送 (累加 `recieved_count`) |
+| 供應單 / 物資 | `/supplies`, `/supply_items` | 建立供應單、單筆/多筆物資項目管理、批次配送 (累加 `recieved_count`) |
 | 志工招募單位 | `/volunteer_organizations` | 招募或協作單位資訊 |
 | 庇護所 | `/shelters` | 庇護 / 收容點資訊 |
 | 醫療站 | `/medical_stations` | 醫療支援站點 |
@@ -39,7 +37,7 @@
 }
 ```
 
-## 供應單 (Supply) 與物資項目 (SuppilyItem)
+## 供應單 (Supply) 與物資項目 (SupplyItem)
 
 設計重點：
 - 建立供應單時可「可選」內嵌 1 個初始物資項目 (payload 的 `supplies` 為單一物件)。
@@ -75,7 +73,7 @@ POST `/supplies`
   "created_at": 1728000000,
   "updated_at": 1728000000,
   "supplies": [
-    {"id":"<item-uuid>","suppily_id":"<uuid>","tag":"food","name":"白米","recieved_count":50,"total_count":500,"unit":"公斤"}
+  {"id":"<item-uuid>","supply_id":"<uuid>","tag":"food","name":"白米","recieved_count":50,"total_count":500,"unit":"公斤"}
   ]
 }
 ```
@@ -91,10 +89,10 @@ GET `/supplies?limit=50&offset=0`
 目前列表中的每個 `member` 供應單物件（暫未嵌入 supplies 陣列）只含基本欄位；需要細項時請再呼叫 `GET /supplies/{id}`。未來若要內嵌第一筆或全部項目，可再調整。
 
 ### 建立物資項目
-POST `/suppily_items`
+POST `/supply_items`
 ```json
 {
-  "suppily_id": "<supply-uuid>",
+  "supply_id": "<supply-uuid>",
   "tag": "medical",
   "name": "繃帶",
   "total_count": 200,
@@ -104,7 +102,7 @@ POST `/suppily_items`
 回應：`{ "id": "<item-uuid>" }`
 
 ### 更新物資項目 (部分欄位)
-PATCH `/suppily_items/{id}`
+PATCH `/supply_items/{id}`
 ```json
 { "recieved_count": 120 }
 ```
@@ -153,7 +151,7 @@ POST `/supplies/{id}`  （注意：不是舊版的 `/supplies/distribute`）
 
 ## 命名特別說明
 - `recieved_count`：與前端既有欄位保持一致的錯字；資料庫內部欄位仍為 `received_count`。
-- `suppily_items`：沿用需求原拼法 (suppily)。
+- （重大變更）`suppily_items` 已更名為 `supply_items`，欄位 `suppily_id` 改為 `supply_id`，Schema/路徑/操作 ID 同步更新。
 
 ## 環境變數
 從環境讀取 (未使用外部 dotenv 套件)，可參考 `.env.example`：

@@ -260,10 +260,10 @@ type Supply struct {
 	UpdatedAt int64   `json:"updated_at"`
 }
 
-// SuppilyItem represents suppily_items table row (intentional naming per spec)
-type SuppilyItem struct {
+// SupplyItem represents supply_items table row (corrected naming)
+type SupplyItem struct {
 	ID            string  `json:"id"`
-	SuppilyID     string  `json:"suppily_id"`
+	SupplyID      string  `json:"supply_id"`
 	Tag           *string `json:"tag"`
 	Name          *string `json:"name"`
 	ReceivedCount int     `json:"recieved_count"`
