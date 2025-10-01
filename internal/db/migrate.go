@@ -24,14 +24,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             image_url text
         )`,
 		`create index if not exists idx_vol_org_updated on volunteer_organizations(last_updated)`,
-		`create table if not exists delivery_records (
-            id uuid primary key default gen_random_uuid(),
-            supply_item_id uuid not null references supply_items(id) on delete cascade,
-            quantity int not null,
-            notes text,
-            created_at timestamptz not null default now()
-        )`,
-		`create index if not exists idx_delivery_records_supply_item on delivery_records(supply_item_id)`,
 		`create table if not exists shelters (
             id uuid primary key default gen_random_uuid(),
             name text not null,
@@ -280,8 +272,8 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             updated_at timestamptz not null default now()
         )`,
 		`create index if not exists idx_supplies_updated_at on supplies(updated_at)`,
-        /* Renamed to supply_items (previously 'suppily_items') */
-        `create table if not exists supply_items (
+		/* Renamed to supply_items (previously 'suppily_items') */
+		`create table if not exists supply_items (
             id uuid primary key default gen_random_uuid(),
             supply_id uuid not null references supplies(id) on delete cascade,
             tag text,
@@ -291,7 +283,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             unit text,
             constraint chk_supply_items_received_le_total check (received_count <= total_number)
         )`,
-        `create index if not exists idx_supply_items_supply_id on supply_items(supply_id)`,
+		`create index if not exists idx_supply_items_supply_id on supply_items(supply_id)`,
 		// Add new columns if migrating from older version
 		`alter table request_logs add column if not exists request_body jsonb`,
 		`alter table request_logs add column if not exists original_data jsonb`,
