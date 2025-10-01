@@ -16,10 +16,9 @@ import (
 //
 // Environment variables:
 //
-//	ALLOWED_COUNTRIES   comma-separated list, case-insensitive (e.g. "TW,JP")
-//	ALLOW_NO_COUNTRY    if "true", missing Cf-Ipcountry header is allowed
-//	COUNTRY_BLOCK_MSG   custom rejection message (default: country not allowed)
-//	ALLOWED_IPS         optional comma-separated list of IPs or CIDRs (e.g. "1.2.3.4,10.0.0.0/8,2001:db8::/32"). If present, client IP must fall inside one of them.
+// 	ALLOWED_COUNTRIES   comma-separated list, case-insensitive (e.g. "TW,JP")
+// 	ALLOW_NO_COUNTRY    if "true", missing Cf-Ipcountry header is allowed
+// 	ALLOWED_IPS         optional comma-separated list of IPs or CIDRs (e.g. "1.2.3.4,10.0.0.0/8,2001:db8::/32"). If present, client IP must fall inside one of them.
 //
 // Behavior:
 //   - Only affects POST & PATCH.
@@ -40,10 +39,6 @@ func IPFilter() gin.HandlerFunc {
 	}
 
 	allowNoHeader := strings.EqualFold(os.Getenv("ALLOW_NO_COUNTRY"), "true")
-	blockMsg := os.Getenv("COUNTRY_BLOCK_MSG")
-	if blockMsg == "" {
-		blockMsg = "country not allowed"
-	}
 
 	// IP/CIDR list (optional)
 	allowedIPsRaw := os.Getenv("ALLOWED_IPS")
@@ -97,46 +92,35 @@ func IPFilter() gin.HandlerFunc {
 		return false
 	}
 
-	block := func(c *gin.Context, reason string, details gin.H) {
-		// Attach a gin error so RequestLogger captures it uniformly.
+	// block constructs a uniform 403 response and records an error for the RequestLogger.
+	block := func(c *gin.Context, reason, ip string, details gin.H) {
 		c.Error(errors.New("blocked: " + reason)) //nolint:errcheck
-		payload := gin.H{"error": blockMsg, "reason": reason}
-		for k, v := range details {
-			payload[k] = v
-		}
+		payload := gin.H{"error": "blocked", "reason": reason, "ip": ip}
+		for k, v := range details { payload[k] = v }
 		c.JSON(http.StatusForbidden, payload)
 		c.Abort()
 	}
 
 	return func(c *gin.Context) {
 		if c.Request.Method != http.MethodPost && c.Request.Method != http.MethodPatch {
-			c.Next()
+			c.Next(); return
+		}
+		cip := clientIP(c)
+
+		// IP enforcement FIRST
+		if len(ipNets) > 0 && !isIPAllowed(cip) {
+			block(c, "ip not allowed", cip, gin.H{})
 			return
 		}
 
-		// Country enforcement (if configured)
+		// Country enforcement (after IP)
 		if len(allowSet) > 0 {
 			country := c.GetHeader("Cf-Ipcountry")
 			if country == "" {
-				if !allowNoHeader {
-					block(c, "missing Cf-Ipcountry", gin.H{})
-					return
-				}
+				if !allowNoHeader { block(c, "missing Cf-Ipcountry", cip, gin.H{}); return }
 			} else {
 				country = strings.ToUpper(strings.TrimSpace(country))
-				if _, ok := allowSet[country]; !ok {
-					block(c, "disallowed country", gin.H{"country": country})
-					return
-				}
-			}
-		}
-
-		// IP enforcement (if configured)
-		if len(ipNets) > 0 {
-			cip := clientIP(c)
-			if !isIPAllowed(cip) {
-				block(c, "ip not allowed", gin.H{"ip": cip})
-				return
+				if _, ok := allowSet[country]; !ok { block(c, "disallowed country", cip, gin.H{"country": country}); return }
 			}
 		}
 
