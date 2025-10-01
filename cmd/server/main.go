@@ -57,6 +57,8 @@ func main() {
 	r.Use(middleware.RequestLogger(pool, 0))
 	// Cache headers for GET responses
 	r.Use(middleware.CacheHeaders(0))
+	// Security headers (CSP/etc.)
+	r.Use(middleware.SecurityHeaders())
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
 	// Swagger UI with custom configuration
