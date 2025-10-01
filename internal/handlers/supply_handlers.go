@@ -17,6 +17,7 @@ type supplyCreateInput struct {
 	Address  *string           `json:"address"`
 	Phone    *string           `json:"phone"`
 	Notes    *string           `json:"notes"`
+	PiiDate  *int64            `json:"pii_date"`
 	Supplies *supplyItemInline `json:"supplies"`
 }
 
@@ -52,7 +53,7 @@ func (h *Handler) CreateSupply(c *gin.Context) {
 	defer tx.Rollback(ctx)
 	var id string
 	var created, updated int64
-	if err := tx.QueryRow(ctx, `insert into supplies(name,address,phone,notes) values($1,$2,$3,$4) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`, in.Name, in.Address, in.Phone, in.Notes).Scan(&id, &created, &updated); err != nil {
+	if err := tx.QueryRow(ctx, `insert into supplies(name,address,phone,notes,pii_date) values($1,$2,$3,$4,$5) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`, in.Name, in.Address, in.Phone, in.Notes, in.PiiDate).Scan(&id, &created, &updated); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -77,7 +78,7 @@ func (h *Handler) CreateSupply(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	resp := gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Supply", "id": id, "name": in.Name, "address": in.Address, "phone": in.Phone, "notes": in.Notes, "created_at": created, "updated_at": updated, "supplies": createdItems}
+	resp := gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Supply", "id": id, "name": in.Name, "address": in.Address, "phone": in.Phone, "notes": in.Notes, "pii_date": in.PiiDate, "created_at": created, "updated_at": updated, "supplies": createdItems}
 	c.JSON(http.StatusCreated, resp)
 }
 
@@ -91,7 +92,7 @@ func (h *Handler) ListSupplies(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	rows, err := h.pool.Query(ctx, `select id,name,address,phone,notes,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supplies order by updated_at desc limit $1 offset $2`, limit, offset)
+	rows, err := h.pool.Query(ctx, `select id,name,address,phone,notes,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supplies order by updated_at desc limit $1 offset $2`, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -101,8 +102,9 @@ func (h *Handler) ListSupplies(c *gin.Context) {
 	for rows.Next() {
 		var s models.Supply
 		var name, addr, phone, notes *string
+		var piiDate *int64
 		var created, updated int64
-		if err := rows.Scan(&s.ID, &name, &addr, &phone, &notes, &created, &updated); err != nil {
+		if err := rows.Scan(&s.ID, &name, &addr, &phone, &notes, &piiDate, &created, &updated); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -110,6 +112,7 @@ func (h *Handler) ListSupplies(c *gin.Context) {
 		s.Address = addr
 		s.Phone = phone
 		s.Notes = notes
+		s.PiiDate = piiDate
 		s.CreatedAt = created
 		s.UpdatedAt = updated
 		list = append(list, s)
@@ -178,6 +181,7 @@ func (h *Handler) ListSupplies(c *gin.Context) {
 			"address":    s.Address,
 			"phone":      s.Phone,
 			"notes":      s.Notes,
+			"pii_date":   s.PiiDate,
 			"created_at": s.CreatedAt,
 			"updated_at": s.UpdatedAt,
 			"supplies":   suppliesArr,
@@ -189,11 +193,12 @@ func (h *Handler) ListSupplies(c *gin.Context) {
 func (h *Handler) GetSupply(c *gin.Context) {
 	id := c.Param("id")
 	ctx := context.Background()
-	row := h.pool.QueryRow(ctx, `select id,name,address,phone,notes,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supplies where id=$1`, id)
+	row := h.pool.QueryRow(ctx, `select id,name,address,phone,notes,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supplies where id=$1`, id)
 	var s models.Supply
 	var name, addr, phone, notes *string
+	var piiDate *int64
 	var created, updated int64
-	if err := row.Scan(&s.ID, &name, &addr, &phone, &notes, &created, &updated); err != nil {
+	if err := row.Scan(&s.ID, &name, &addr, &phone, &notes, &piiDate, &created, &updated); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
@@ -205,6 +210,7 @@ func (h *Handler) GetSupply(c *gin.Context) {
 	s.Address = addr
 	s.Phone = phone
 	s.Notes = notes
+	s.PiiDate = piiDate
 	s.CreatedAt = created
 	s.UpdatedAt = updated
 	// fetch ALL items (could be zero)
@@ -227,7 +233,7 @@ func (h *Handler) GetSupply(c *gin.Context) {
 		it.Unit = unit
 		items = append(items, it)
 	}
-	resp := gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Supply", "id": s.ID, "name": s.Name, "address": s.Address, "phone": s.Phone, "notes": s.Notes, "created_at": s.CreatedAt, "updated_at": s.UpdatedAt, "supplies": items}
+	resp := gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Supply", "id": s.ID, "name": s.Name, "address": s.Address, "phone": s.Phone, "notes": s.Notes, "pii_date": s.PiiDate, "created_at": s.CreatedAt, "updated_at": s.UpdatedAt, "supplies": items}
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -236,6 +242,7 @@ type supplyPatchInput struct {
 	Address *string `json:"address"`
 	Phone   *string `json:"phone"`
 	Notes   *string `json:"notes"`
+	PiiDate *int64  `json:"pii_date"`
 }
 
 func (h *Handler) PatchSupply(c *gin.Context) {
@@ -265,19 +272,23 @@ func (h *Handler) PatchSupply(c *gin.Context) {
 	if in.Notes != nil {
 		add("notes=", *in.Notes)
 	}
+	if in.PiiDate != nil {
+		add("pii_date=", *in.PiiDate)
+	}
 	if len(setParts) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields"})
 		return
 	}
 	setParts = append(setParts, "updated_at=now()")
-	query := "update supplies set " + strings.Join(setParts, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,name,address,phone,notes,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint"
+	query := "update supplies set " + strings.Join(setParts, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,name,address,phone,notes,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint"
 	args = append(args, id)
 	ctx := context.Background()
 	row := h.pool.QueryRow(ctx, query, args...)
 	var s models.Supply
 	var name, addr, phone, notes *string
+	var piiDate *int64
 	var created, updated int64
-	if err := row.Scan(&s.ID, &name, &addr, &phone, &notes, &created, &updated); err != nil {
+	if err := row.Scan(&s.ID, &name, &addr, &phone, &notes, &piiDate, &created, &updated); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
@@ -289,6 +300,7 @@ func (h *Handler) PatchSupply(c *gin.Context) {
 	s.Address = addr
 	s.Phone = phone
 	s.Notes = notes
+	s.PiiDate = piiDate
 	s.CreatedAt = created
 	s.UpdatedAt = updated
 	c.JSON(http.StatusOK, s)

@@ -256,6 +256,7 @@ type Supply struct {
 	Address   *string `json:"address"`
 	Phone     *string `json:"phone"`
 	Notes     *string `json:"notes"`
+	PiiDate   *int64  `json:"pii_date"`
 	CreatedAt int64   `json:"created_at"`
 	UpdatedAt int64   `json:"updated_at"`
 }

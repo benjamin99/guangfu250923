@@ -268,6 +268,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             address text,
             phone text,
             notes text,
+        pii_date bigint,
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,
