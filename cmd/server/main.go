@@ -43,6 +43,7 @@ func main() {
 			"http://127.0.0.1:5500",
 			"http://localhost:5050",
 			"http://127.0.0.1:5050",
+			"https://hualian-typhoon-frontend.zeabur.app",
 			"https://sites.google.com/view/guangfu250923",
 			"https://692001998-atari-embeds.googleusercontent.com",
 			"https://*-atari-embeds.googleusercontent.com",
