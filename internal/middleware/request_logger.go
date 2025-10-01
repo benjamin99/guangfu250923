@@ -105,7 +105,7 @@ func RequestLogger(pool *pgxpool.Pool, maxHeaderBytes int) gin.HandlerFunc {
 				rid = nil
 			}
 			_, _ = pool.Exec(ctx, `insert into request_logs(method,path,query,ip,headers,status_code,error,duration_ms,request_body,original_data,result_data,resource_id) values($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12)`,
-				method, path, rawQuery, ip, string(headers), status, nullIfEmpty(errText), int(took.Milliseconds()), bytesOrNull(reqBody), jsonOrNull(orig), jsonOrNull(result), rid)
+				method, path, rawQuery, ip, string(headers), status, nullIfEmpty(errText), int(took.Milliseconds()), jsonOrNull(reqBody), jsonOrNull(orig), jsonOrNull(result), rid)
 		}(c.Request.Method, c.FullPath(), c.Request.URL.RawQuery, clientIP(c), recorder.status, errMsg, headersJSON, dur, rawBody, originalData, recorder.buf.Bytes(), resourceID)
 	}
 }
@@ -119,7 +119,7 @@ func nullIfEmpty(s string) *string {
 	return &s
 }
 
-func bytesOrNull(b []byte) *string {
+func bytesOrNull(b []byte) *string { // retained for backwards compatibility (not used for JSON columns now)
 	if len(b) == 0 {
 		return nil
 	}
@@ -127,11 +127,24 @@ func bytesOrNull(b []byte) *string {
 	return &s
 }
 
+// jsonOrNull guarantees returned string is valid JSON for insertion into a jsonb column.
+// If the raw bytes are already valid JSON, they are used as-is. Otherwise they're wrapped as a JSON string.
 func jsonOrNull(b []byte) *string {
 	if len(b) == 0 {
 		return nil
 	}
-	s := string(b)
+	trimmed := bytes.TrimSpace(b)
+	if json.Valid(trimmed) {
+		s := string(trimmed)
+		return &s
+	}
+	// Wrap as JSON string (escape safely)
+	escaped, err := json.Marshal(string(b))
+	if err != nil { // fallback minimal quoting
+		s := `""`
+		return &s
+	}
+	s := string(escaped)
 	return &s
 }
 
