@@ -281,6 +281,7 @@ type Report struct {
 	Reason       string  `json:"reason"`
 	Notes        *string `json:"notes"`
 	Status       string  `json:"status"`
+	LocationID   string  `json:"location_id"`
 	CreatedAt    int64   `json:"created_at"`
 	UpdatedAt    int64   `json:"updated_at"`
 }

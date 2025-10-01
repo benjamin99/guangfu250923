@@ -19,6 +19,7 @@ type reportCreateInput struct {
 	Reason       string  `json:"reason" binding:"required"`
 	Notes        *string `json:"notes"`
 	Status       string  `json:"status" binding:"required"`
+	LocationID   string  `json:"location_id" binding:"required"`
 }
 
 type reportPatchInput struct {
@@ -27,6 +28,7 @@ type reportPatchInput struct {
 	Reason       *string `json:"reason"`
 	Notes        *string `json:"notes"`
 	Status       *string `json:"status"`
+	LocationID   *string `json:"location_id"`
 }
 
 func (h *Handler) CreateReport(c *gin.Context) {
@@ -36,7 +38,7 @@ func (h *Handler) CreateReport(c *gin.Context) {
 		return
 	}
 	// Basic trim validation
-	for field, val := range map[string]string{"name": in.Name, "location_type": in.LocationType, "reason": in.Reason, "status": in.Status} {
+	for field, val := range map[string]string{"name": in.Name, "location_type": in.LocationType, "reason": in.Reason, "status": in.Status, "location_id": in.LocationID} {
 		if strings.TrimSpace(val) == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": field + " is required"})
 			return
@@ -48,10 +50,10 @@ func (h *Handler) CreateReport(c *gin.Context) {
 		return
 	}
 	id := "incident-" + newUUID.String()
-	row := h.pool.QueryRow(context.Background(), `insert into reports(id,name,location_type,reason,notes,status) values($1,$2,$3,$4,$5,$6) returning id,name,location_type,reason,notes,status,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`, id, in.Name, in.LocationType, in.Reason, in.Notes, in.Status)
+	row := h.pool.QueryRow(context.Background(), `insert into reports(id,name,location_type,reason,notes,status,location_id) values($1,$2,$3,$4,$5,$6,$7) returning id,name,location_type,reason,notes,status,location_id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`, id, in.Name, in.LocationType, in.Reason, in.Notes, in.Status, in.LocationID)
 	var r models.Report
 	var notes *string
-	if err := row.Scan(&r.ID, &r.Name, &r.LocationType, &r.Reason, &notes, &r.Status, &r.CreatedAt, &r.UpdatedAt); err != nil {
+	if err := row.Scan(&r.ID, &r.Name, &r.LocationType, &r.Reason, &notes, &r.Status, &r.LocationID, &r.CreatedAt, &r.UpdatedAt); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -66,7 +68,7 @@ func (h *Handler) ListReports(c *gin.Context) {
 	ctx := context.Background()
 	var total int
 	countSQL := `select count(*) from reports`
-	listSQL := `select id,name,location_type,reason,notes,status,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from reports`
+	listSQL := `select id,name,location_type,reason,notes,status,location_id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from reports`
 	args := []interface{}{}
 	if status != "" {
 		countSQL += " where status=$1"
@@ -89,7 +91,7 @@ func (h *Handler) ListReports(c *gin.Context) {
 	for rows.Next() {
 		var r models.Report
 		var notes *string
-		if err := rows.Scan(&r.ID, &r.Name, &r.LocationType, &r.Reason, &notes, &r.Status, &r.CreatedAt, &r.UpdatedAt); err != nil {
+		if err := rows.Scan(&r.ID, &r.Name, &r.LocationType, &r.Reason, &notes, &r.Status, &r.LocationID, &r.CreatedAt, &r.UpdatedAt); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -118,10 +120,10 @@ func (h *Handler) ListReports(c *gin.Context) {
 
 func (h *Handler) GetReport(c *gin.Context) {
 	id := c.Param("id")
-	row := h.pool.QueryRow(context.Background(), `select id,name,location_type,reason,notes,status,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from reports where id=$1`, id)
+	row := h.pool.QueryRow(context.Background(), `select id,name,location_type,reason,notes,status,location_id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from reports where id=$1`, id)
 	var r models.Report
 	var notes *string
-	if err := row.Scan(&r.ID, &r.Name, &r.LocationType, &r.Reason, &notes, &r.Status, &r.CreatedAt, &r.UpdatedAt); err != nil {
+	if err := row.Scan(&r.ID, &r.Name, &r.LocationType, &r.Reason, &notes, &r.Status, &r.LocationID, &r.CreatedAt, &r.UpdatedAt); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
@@ -163,17 +165,20 @@ func (h *Handler) PatchReport(c *gin.Context) {
 	if in.Status != nil {
 		add("status=", *in.Status)
 	}
+	if in.LocationID != nil {
+		add("location_id=", *in.LocationID)
+	}
 	if len(set) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields"})
 		return
 	}
 	set = append(set, "updated_at=now()")
-	query := "update reports set " + strings.Join(set, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,name,location_type,reason,notes,status,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint"
+	query := "update reports set " + strings.Join(set, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,name,location_type,reason,notes,status,location_id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint"
 	args = append(args, id)
 	row := h.pool.QueryRow(context.Background(), query, args...)
 	var r models.Report
 	var notes *string
-	if err := row.Scan(&r.ID, &r.Name, &r.LocationType, &r.Reason, &notes, &r.Status, &r.CreatedAt, &r.UpdatedAt); err != nil {
+	if err := row.Scan(&r.ID, &r.Name, &r.LocationType, &r.Reason, &notes, &r.Status, &r.LocationID, &r.CreatedAt, &r.UpdatedAt); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return

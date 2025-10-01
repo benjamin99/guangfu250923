@@ -2142,6 +2142,10 @@ components:
           type: string
           description: 回報點類別
           example: 加水站
+        location_id:
+          type: string
+          description: 回報問題點的ID (可對應既有資源，例如 water_refill_stations / restrooms 等)
+          example: water-uuid-001
         reason:
           type: string
           description: 事件描述
@@ -2169,13 +2173,14 @@ components:
           readOnly: true
     ReportCreate:
       type: object
-      required: [name,location_type,reason,status]
+      required: [name,location_type,reason,status,location_id]
       properties:
         name: { type: string }
         location_type: { type: string }
         reason: { type: string }
         notes: { type: string, nullable: true }
         status: { type: string, description: '是否解決 (true/false 字串)' }
+        location_id: { type: string, description: 回報問題點的ID, example: water-uuid-001 }
     ReportPatch:
       type: object
       properties:
@@ -2184,6 +2189,7 @@ components:
         reason: { type: string }
         notes: { type: string, nullable: true }
         status: { type: string }
+        location_id: { type: string }
     ReportCollection:
       allOf:
         - $ref: '#/components/schemas/CollectionBase'

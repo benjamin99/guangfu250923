@@ -308,9 +308,15 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             reason text not null,
             notes text,
             status text not null,
+            location_id text not null,
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,
+		`alter table reports add column if not exists location_id text not null default ''`,
+		// Ensure no empty location_id remains (optional: set to placeholder if truly unknown)
+		`do $$ begin
+          update reports set location_id = 'unknown' where location_id = '';
+        end $$;`,
 		`create index if not exists idx_reports_status on reports(status)`,
 		`create index if not exists idx_reports_updated_at on reports(updated_at)`,
 		// IP denylist for middleware (single IP or CIDR patterns)
