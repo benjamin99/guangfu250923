@@ -272,3 +272,15 @@ type SupplyItem struct {
 	TotalCount    int     `json:"total_count"`
 	Unit          *string `json:"unit"`
 }
+
+// Report represents reports table row
+type Report struct {
+	ID           string  `json:"id"`
+	Name         string  `json:"name"`
+	LocationType string  `json:"location_type"`
+	Reason       string  `json:"reason"`
+	Notes        *string `json:"notes"`
+	Status       string  `json:"status"`
+	CreatedAt    int64   `json:"created_at"`
+	UpdatedAt    int64   `json:"updated_at"`
+}

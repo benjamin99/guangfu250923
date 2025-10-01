@@ -293,6 +293,19 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`alter table request_logs add column if not exists resource_id uuid`,
 		`create index if not exists idx_request_logs_created_at on request_logs(created_at)`,
 		`create index if not exists idx_request_logs_status_code on request_logs(status_code)`,
+		// Reports table
+		`create table if not exists reports (
+            id text primary key,
+            name text not null,
+            location_type text not null,
+            reason text not null,
+            notes text,
+            status text not null,
+            created_at timestamptz not null default now(),
+            updated_at timestamptz not null default now()
+        )`,
+		`create index if not exists idx_reports_status on reports(status)`,
+		`create index if not exists idx_reports_updated_at on reports(updated_at)`,
 	}
 	for _, s := range stmts {
 		if _, err := pool.Exec(ctx, s); err != nil {

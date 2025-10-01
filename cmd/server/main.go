@@ -137,6 +137,12 @@ func main() {
 	// Admin: request logs
 	r.GET("/_admin/request_logs", h.ListRequestLogs)
 
+	// Reports (incidents)
+	r.POST("/reports", h.CreateReport)
+	r.GET("/reports", h.ListReports)
+	r.GET("/reports/:id", h.GetReport)
+	r.PATCH("/reports/:id", h.PatchReport)
+
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: r}
 	log.Printf("server listening on :%s", cfg.Port)
 	log.Printf("Swagger UI available at http://localhost:%s/swagger/index.html", cfg.Port)

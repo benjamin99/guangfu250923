@@ -273,6 +273,66 @@ paths:
         '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
         '400': { description: 輸入錯誤 }
         '404': { description: 找不到 }
+  /reports:
+    get:
+      operationId: listReports
+      summary: 取得回報事件清單 (分頁)
+      description: 分頁列出使用者或系統回報的事件點。
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ReportCollection' } } } }
+    post:
+      operationId: createReport
+      summary: 建立回報事件
+      description: 新增一筆事件 / 狀態回報。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/Report' } } } }
+        '400': { description: 輸入錯誤 }
+  /reports/{id}:
+    get:
+      operationId: getReport
+      summary: 取得單一回報事件
+      description: 依 ID 取得事件詳情。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Report' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchReport
+      summary: 更新回報事件 (部分欄位)
+      description: 部分更新事件欄位；未提供之欄位不變。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportPatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/Report' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
   /accommodations:
     get:
       operationId: listAccommodations
@@ -2066,3 +2126,69 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/SupplyItem' }
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 事件唯一識別碼
+          example: incident-uuid-001
+          readOnly: true
+        name:
+          type: string
+          description: 回報點名稱
+          example: 光復國小積水
+        location_type:
+          type: string
+          description: 回報點類別
+          example: 加水站
+        reason:
+          type: string
+          description: 事件描述
+          example: 校園操場積水深度約50公分
+        notes:
+          type: string
+          nullable: true
+          description: 其他資訊
+          example: 今天星期三
+        status:
+          type: string
+          description: 是否解決 (true/false 以字串表示)
+          example: "false"
+        created_at:
+          type: integer
+          format: int64
+          description: 建立時間 (Unix timestamp 秒)
+          example: 1727664000
+          readOnly: true
+        updated_at:
+          type: integer
+          format: int64
+          description: 更新時間 (Unix timestamp 秒)
+          example: 1727750400
+          readOnly: true
+    ReportCreate:
+      type: object
+      required: [name,location_type,reason,status]
+      properties:
+        name: { type: string }
+        location_type: { type: string }
+        reason: { type: string }
+        notes: { type: string, nullable: true }
+        status: { type: string, description: '是否解決 (true/false 字串)' }
+    ReportPatch:
+      type: object
+      properties:
+        name: { type: string }
+        location_type: { type: string }
+        reason: { type: string }
+        notes: { type: string, nullable: true }
+        status: { type: string }
+    ReportCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/Report' }
