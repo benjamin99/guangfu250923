@@ -259,7 +259,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             request_body jsonb,
             original_data jsonb,
             result_data jsonb,
-            resource_id uuid,
+            resource_id text,
             created_at timestamptz not null default now()
         )`,
 		// New simplified supplies domain (replaces legacy requests/supply_items usage)
@@ -290,7 +290,14 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`alter table request_logs add column if not exists request_body jsonb`,
 		`alter table request_logs add column if not exists original_data jsonb`,
 		`alter table request_logs add column if not exists result_data jsonb`,
-		`alter table request_logs add column if not exists resource_id uuid`,
+		`alter table request_logs add column if not exists resource_id text`,
+		// If existing column is uuid, attempt to widen to text (safe no-op if already text)
+		`do $$ begin
+          perform 1 from information_schema.columns where table_name='request_logs' and column_name='resource_id' and data_type='uuid';
+          if found then
+            alter table request_logs alter column resource_id type text using resource_id::text;
+          end if;
+        end $$;`,
 		`create index if not exists idx_request_logs_created_at on request_logs(created_at)`,
 		`create index if not exists idx_request_logs_status_code on request_logs(status_code)`,
 		// Reports table
