@@ -676,7 +676,7 @@ paths:
         '404': { description: 找不到 }
     patch:
       operationId: patchSupply
-      summary: 更新供應單 (部分欄位)
+      summary: 更新供應單 (部分欄位) (停用)
       description: 對供應單進行部分欄位更新；僅更新傳入的欄位 (name/address/phone/notes)。不影響其下物資項目。
       requestBody:
         required: true
@@ -762,7 +762,7 @@ paths:
         '404': { description: 找不到 }
     patch:
       operationId: patchSupplyItem
-      summary: 更新物資項目 (部分欄位)
+      summary: 更新物資項目 (部分欄位) (停用)
       description: 部分更新物資項目欄位；若更新 recieved_count 則不得超過 total_count。
       requestBody:
         required: true
