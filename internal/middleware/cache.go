@@ -151,12 +151,25 @@ func writeBuffered(r *cacheRecorder) {
 
 // cacheControlForPath decides cache policy based on path pattern and query string.
 func cacheControlForPath(pattern, rawQuery string) string {
+	// public: 僅限沒有登入的東西
+	// no-store: 即時變更，不能快取 (登入頁面、管理介面)
+	// no-cache: 需要即時變更，但允許瀏覽器/中介快取，回傳前需重新驗證 (動態內容、使用者相關)
+	// public, max-age=xxx: 允許公開快取，適合不常變更的靜態內容 (大部分 GET API)
+	// private, max-age=xxx: 允許使用者端快取，禁止中介快取 (使用者專屬內容)
+	// must-revalidate: 過期後需重新驗證 (避免過期後繼續使用陳舊內容)
+
 	if strings.HasPrefix(pattern, "/_admin/") || pattern == "/healthz" {
 		return "no-store"
 	}
+	// Highly dynamic aggregated embedding: disable cache to reflect near real-time changes
+	if strings.Contains(rawQuery, "embed=all") && pattern == "/supplies" {
+		// 需要即時回應
+		return "public, no-cache"
+	}
 	// list endpoints usually have limit/offset
 	if strings.Contains(rawQuery, "offset=") || strings.Contains(rawQuery, "limit=") {
-		return "public, max-age=30"
+		// 廁所等等，不需要及時變更
+		return "public, max-age=300"
 	}
 	// entity endpoints (contain :id)
 	if strings.Contains(pattern, ":id") {

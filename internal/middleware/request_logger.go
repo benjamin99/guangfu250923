@@ -135,7 +135,8 @@ func jsonOrNull(b []byte) *string {
 	return &s
 }
 
-var idPattern = regexp.MustCompile(`(?i)^[0-9a-f-]{16,36}$`)
+// Accept broader id patterns: plain UUIDs or prefixed ids like hr-<uuid>
+var idPattern = regexp.MustCompile(`(?i)^[0-9a-z-]{8,64}$`)
 
 // extractIDFromPath tries to correlate the parameterized gin route with actual path to capture :id value.
 func extractIDFromPath(fullPathPattern, actual string) string {
@@ -168,19 +169,72 @@ func fetchOriginal(c *gin.Context, pool *pgxpool.Pool, pattern, id string) []byt
 	var sql string
 	switch pattern {
 	case "/shelters/:id":
-		sql = "select row_to_json(t) from (select id,name,location,phone,link,status,capacity,current_occupancy,available_spaces,facilities,contact_person,notes,lat,lng,opening_hours,extract(epoch from created_at)::bigint as created_at,extract(epoch from updated_at)::bigint as updated_at from shelters where id=$1) t"
+		sql = `select row_to_json(t) from (
+		  select id,name,location,phone,link,status,capacity,current_occupancy,available_spaces,facilities,contact_person,notes,lat,lng,opening_hours,
+			  extract(epoch from created_at)::bigint as created_at,
+			  extract(epoch from updated_at)::bigint as updated_at
+		  from shelters where id=$1) t`
 	case "/medical_stations/:id":
-		sql = "select row_to_json(t) from (select id,name,station_type,address,phone,status,services,lat,lng,notes,extract(epoch from created_at)::bigint as created_at,extract(epoch from updated_at)::bigint as updated_at from medical_stations where id=$1) t"
+		// medical_stations schema (no 'address' column; uses location + detailed_address etc.)
+		sql = `select row_to_json(t) from (
+		  select id,station_type,name,location,detailed_address,phone,contact_person,status,services,equipment,operating_hours,medical_staff,daily_capacity,
+			  affiliated_organization,notes,link,lat,lng,
+			  extract(epoch from created_at)::bigint as created_at,
+			  extract(epoch from updated_at)::bigint as updated_at
+		  from medical_stations where id=$1) t`
 	case "/mental_health_resources/:id":
-		sql = "select row_to_json(t) from (select id,name,organization,duration_type,service_format,contact,website,status,lat,lng,notes,extract(epoch from created_at)::bigint as created_at,extract(epoch from updated_at)::bigint as updated_at from mental_health_resources where id=$1) t"
+		sql = `select row_to_json(t) from (
+		  select id,duration_type,name,service_format,service_hours,contact_info,website_url,target_audience,specialties,languages,is_free,location,lat,lng,status,capacity,waiting_time,notes,emergency_support,
+			  extract(epoch from created_at)::bigint as created_at,
+			  extract(epoch from updated_at)::bigint as updated_at
+		  from mental_health_resources where id=$1) t`
 	case "/accommodations/:id":
-		sql = "select row_to_json(t) from (select id,name,address,phone,township,status,capacity,available,has_vacancy,lat,lng,notes,extract(epoch from created_at)::bigint as created_at,extract(epoch from updated_at)::bigint as updated_at from accommodations where id=$1) t"
+		sql = `select row_to_json(t) from (
+		  select id,township,name,has_vacancy,available_period,restrictions,contact_info,room_info,address,pricing,info_source,notes,capacity,status,registration_method,facilities,distance_to_disaster_area,lat,lng,
+			  extract(epoch from created_at)::bigint as created_at,
+			  extract(epoch from updated_at)::bigint as updated_at
+		  from accommodations where id=$1) t`
 	case "/shower_stations/:id":
-		sql = "select row_to_json(t) from (select id,name,address,phone,facility_type,is_free,requires_appointment,status,opening_hours,lat,lng,notes,extract(epoch from created_at)::bigint as created_at,extract(epoch from updated_at)::bigint as updated_at from shower_stations where id=$1) t"
+		sql = `select row_to_json(t) from (
+		  select id,name,address,phone,facility_type,time_slots,gender_schedule,available_period,capacity,is_free,pricing,notes,info_source,status,facilities,distance_to_guangfu,requires_appointment,contact_method,lat,lng,
+			  extract(epoch from created_at)::bigint as created_at,
+			  extract(epoch from updated_at)::bigint as updated_at
+		  from shower_stations where id=$1) t`
 	case "/water_refill_stations/:id":
-		sql = "select row_to_json(t) from (select id,name,address,phone,water_type,is_free,accessibility,status,opening_hours,lat,lng,notes,extract(epoch from created_at)::bigint as created_at,extract(epoch from updated_at)::bigint as updated_at from water_refill_stations where id=$1) t"
+		sql = `select row_to_json(t) from (
+		  select id,name,address,phone,water_type,opening_hours,is_free,container_required,daily_capacity,status,water_quality,facilities,accessibility,distance_to_disaster_area,notes,info_source,lat,lng,
+			  extract(epoch from created_at)::bigint as created_at,
+			  extract(epoch from updated_at)::bigint as updated_at
+		  from water_refill_stations where id=$1) t`
 	case "/restrooms/:id":
-		sql = "select row_to_json(t) from (select id,name,address,phone,facility_type,opening_hours,is_free,male_units,female_units,unisex_units,accessible_units,has_water,has_lighting,status,cleanliness,last_cleaned,facilities,distance_to_disaster_area,notes,info_source,lat,lng,extract(epoch from created_at)::bigint as created_at,extract(epoch from updated_at)::bigint as updated_at from restrooms where id=$1) t"
+		sql = `select row_to_json(t) from (
+		  select id,name,address,phone,facility_type,opening_hours,is_free,male_units,female_units,unisex_units,accessible_units,has_water,has_lighting,status,cleanliness,last_cleaned,facilities,distance_to_disaster_area,notes,info_source,lat,lng,
+			  extract(epoch from created_at)::bigint as created_at,
+			  extract(epoch from updated_at)::bigint as updated_at
+		  from restrooms where id=$1) t`
+	case "/volunteer_organizations/:id":
+		sql = `select row_to_json(t) from (
+		  select id,organization_name,registration_status,organization_nature,coordinator,contact_info,registration_method,service_content,meeting_info,notes,image_url,
+			  extract(epoch from last_updated)::bigint as last_updated
+		  from volunteer_organizations where id=$1) t`
+	case "/human_resources/:id":
+		sql = `select row_to_json(t) from (
+		  select id,org,address,phone,status,is_completed,has_medical,role_name,role_type,skills,certifications,experience_level,language_requirements,headcount_need,headcount_got,headcount_unit,role_status,
+			  shift_start_ts,shift_end_ts,shift_notes,assignment_timestamp,assignment_count,assignment_notes,
+			  total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests,
+			  extract(epoch from created_at)::bigint as created_at,
+			  extract(epoch from updated_at)::bigint as updated_at
+		  from human_resources where id=$1) t`
+	case "/supplies/:id":
+		sql = `select row_to_json(t) from (
+		  select id,name,address,phone,notes,
+			  extract(epoch from created_at)::bigint as created_at,
+			  extract(epoch from updated_at)::bigint as updated_at
+		  from supplies where id=$1) t`
+	case "/supply_items/:id":
+		sql = `select row_to_json(t) from (
+		  select id,supply_id,tag,name,received_count as recieved_count,total_number as total_count,unit
+		  from supply_items where id=$1) t`
 	default:
 		return nil
 	}
