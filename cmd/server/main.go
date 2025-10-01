@@ -40,9 +40,11 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"*",
+			"http://localhost:5173",
 			"http://127.0.0.1:5500",
 			"http://localhost:5050",
 			"http://127.0.0.1:5050",
+			"https://guangfu250923-map.pttapp.cc",
 			"https://hualian-typhoon-frontend.zeabur.app",
 			"https://sites.google.com/view/guangfu250923",
 			"https://692001998-atari-embeds.googleusercontent.com",
