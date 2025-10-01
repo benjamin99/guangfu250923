@@ -306,6 +306,15 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
         )`,
 		`create index if not exists idx_reports_status on reports(status)`,
 		`create index if not exists idx_reports_updated_at on reports(updated_at)`,
+		// IP denylist for middleware (single IP or CIDR patterns)
+		`create table if not exists ip_denylist (
+            id uuid primary key default gen_random_uuid(),
+            pattern text not null,
+            reason text,
+            created_at timestamptz not null default now(),
+            updated_at timestamptz not null default now()
+        )`,
+		`create index if not exists idx_ip_denylist_pattern on ip_denylist(pattern)`,
 	}
 	for _, s := range stmts {
 		if _, err := pool.Exec(ctx, s); err != nil {
