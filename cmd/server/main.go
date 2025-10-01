@@ -48,8 +48,10 @@ func main() {
 			"https://692001998-atari-embeds.googleusercontent.com",
 			"https://*-atari-embeds.googleusercontent.com",
 		},
-		AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowMethods: []string{"GET", "POST", "PATCH", "OPTIONS"},
+		// Add "User-Agent" to satisfy Safari (it sometimes includes it in Access-Control-Request-Headers)
+		// You may broaden this further or use "*" if you trust clients and want less friction.
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "User-Agent"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: false,
 		MaxAge:           43200 * time.Second, // 12h
