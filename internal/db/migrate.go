@@ -207,6 +207,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             status text not null,
             is_completed boolean not null,
             has_medical boolean,
+        pii_date bigint,
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now(),
             role_name text not null,

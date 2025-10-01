@@ -1713,6 +1713,12 @@ components:
           nullable: true
           description: 是否屬於醫療人力需求
           example: false
+        pii_date:
+          type: integer
+          format: int64
+          nullable: true
+          description: 個資同意時間 (Unix Timestamp)
+          example: 1759164503
         created_at:
           type: integer
           format: int64
@@ -1885,6 +1891,7 @@ components:
         status: { type: string }
         is_completed: { type: boolean }
         has_medical: { type: boolean, nullable: true }
+        pii_date: { type: integer, format: int64, nullable: true, description: 個資同意時間 (Unix Timestamp) }
         role_name: { type: string }
         role_type: { type: string }
         skills: { type: array, items: { type: string } }
@@ -1910,6 +1917,7 @@ components:
         status: { type: string }
         is_completed: { type: boolean }
         has_medical: { type: boolean }
+        pii_date: { type: integer, format: int64, nullable: true, description: 個資同意時間 (Unix Timestamp) }
         role_name: { type: string }
         role_type: { type: string }
         skills: { type: array, items: { type: string } }

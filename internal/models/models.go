@@ -217,6 +217,7 @@ type HumanResource struct {
 	Status                  string   `json:"status"`
 	IsCompleted             bool     `json:"is_completed"`
 	HasMedical              *bool    `json:"has_medical"`
+	PiiDate                 *int64   `json:"pii_date"`
 	CreatedAt               int64    `json:"created_at"`
 	UpdatedAt               int64    `json:"updated_at"`
 	RoleName                string   `json:"role_name"`

@@ -50,7 +50,7 @@ func (h *Handler) ListHumanResources(c *gin.Context) {
 		add("role_type=", roleType)
 	}
 
-	base := `select id,org,address,phone,status,is_completed,has_medical,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests from human_resources`
+	base := `select id,org,address,phone,status,is_completed,has_medical,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests from human_resources`
 	countSQL := `select count(*) from human_resources`
 	if len(where) > 0 {
 		clause := " where " + join(where, " and ")
@@ -87,10 +87,12 @@ func (h *Handler) ListHumanResources(c *gin.Context) {
 		var totalReq, activeReq, completedReq, cancelledReq *int
 		var totalRoles, completedRoles, pendingRoles *int
 		var urgentReq, medicalReq *int
-		if err := rows.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStart, &shiftEnd, &shiftNotes, &assignmentTs, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
+		var piiDate *int64
+		if err := rows.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &piiDate, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStart, &shiftEnd, &shiftNotes, &assignmentTs, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		hr.PiiDate = piiDate
 		hr.HasMedical = hasMedical
 		hr.Skills = skills
 		hr.Certifications = certs
@@ -144,7 +146,7 @@ func join(parts []string, sep string) string {
 // GetHumanResource fetch single by id
 func (h *Handler) GetHumanResource(c *gin.Context) {
 	id := c.Param("id")
-	row := h.pool.QueryRow(context.Background(), `select id,org,address,phone,status,is_completed,has_medical,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests from human_resources where id=$1`, id)
+	row := h.pool.QueryRow(context.Background(), `select id,org,address,phone,status,is_completed,has_medical,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests from human_resources where id=$1`, id)
 	var hr models.HumanResource
 	var skills, certs, langs []string
 	var hasMedical *bool
@@ -156,7 +158,8 @@ func (h *Handler) GetHumanResource(c *gin.Context) {
 	var totalReq, activeReq, completedReq, cancelledReq *int
 	var totalRoles, completedRoles, pendingRoles *int
 	var urgentReq, medicalReq *int
-	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStart, &shiftEnd, &shiftNotes, &assignmentTs, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
+	var piiDate *int64
+	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &piiDate, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStart, &shiftEnd, &shiftNotes, &assignmentTs, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
@@ -165,6 +168,7 @@ func (h *Handler) GetHumanResource(c *gin.Context) {
 		return
 	}
 	hr.HasMedical = hasMedical
+	hr.PiiDate = piiDate
 	hr.Skills = skills
 	hr.Certifications = certs
 	hr.LanguageRequirements = langs
@@ -199,6 +203,7 @@ type humanResourceCreateInput struct {
 	Status               string   `json:"status"`
 	IsCompleted          bool     `json:"is_completed"`
 	HasMedical           *bool    `json:"has_medical"`
+	PiiDate              *int64   `json:"pii_date"`
 	RoleName             string   `json:"role_name"`
 	RoleType             string   `json:"role_type"`
 	Skills               []string `json:"skills"`
@@ -273,13 +278,13 @@ func (h *Handler) CreateHumanResource(c *gin.Context) {
 
 	// NOTE: keep column count in sync with values placeholders (1..35). If you add/remove a column update both lists.
 	sql := `insert into human_resources (
-        id,org,address,phone,status,is_completed,has_medical,role_name,role_type,skills,certifications,experience_level,language_requirements,headcount_need,headcount_got,headcount_unit,role_status,shift_start_ts,shift_end_ts,shift_notes,assignment_timestamp,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests
-    ) values (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35
-    ) returning id,org,address,phone,status,is_completed,has_medical,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests`
+			id,org,address,phone,status,is_completed,has_medical,pii_date,role_name,role_type,skills,certifications,experience_level,language_requirements,headcount_need,headcount_got,headcount_unit,role_status,shift_start_ts,shift_end_ts,shift_notes,assignment_timestamp,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests
+		) values (
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36
+		) returning id,org,address,phone,status,is_completed,has_medical,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests`
 
 	row := h.pool.QueryRow(context.Background(), sql,
-		id, in.Org, in.Address, in.Phone, in.Status, in.IsCompleted, in.HasMedical, in.RoleName, in.RoleType,
+		id, in.Org, in.Address, in.Phone, in.Status, in.IsCompleted, in.HasMedical, in.PiiDate, in.RoleName, in.RoleType,
 		sliceOrNil(in.Skills), sliceOrNil(in.Certifications), in.ExperienceLevel, sliceOrNil(in.LanguageRequirements),
 		in.HeadcountNeed, in.HeadcountGot, in.HeadcountUnit, in.RoleStatus,
 		shiftStart, shiftEnd, in.ShiftNotes, assignmentTs, in.AssignmentCount, in.AssignmentNotes,
@@ -298,11 +303,13 @@ func (h *Handler) CreateHumanResource(c *gin.Context) {
 	var totalReq, activeReq, completedReq, cancelledReq *int
 	var totalRoles, completedRoles, pendingRoles *int
 	var urgentReq, medicalReq *int
-	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStartTs, &shiftEndTs, &shiftNotes, &assignmentTimestamp, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
+	var piiDate2 *int64
+	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &piiDate2, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStartTs, &shiftEndTs, &shiftNotes, &assignmentTimestamp, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	hr.HasMedical = hasMedical
+	hr.PiiDate = piiDate2
 	hr.Skills = skills
 	hr.Certifications = certs
 	hr.LanguageRequirements = langs
@@ -338,6 +345,7 @@ type humanResourcePatchInput struct {
 	Status                  *string  `json:"status"`
 	IsCompleted             *bool    `json:"is_completed"`
 	HasMedical              *bool    `json:"has_medical"`
+	PiiDate                 *int64   `json:"pii_date"`
 	RoleName                *string  `json:"role_name"`
 	RoleType                *string  `json:"role_type"`
 	Skills                  []string `json:"skills"`
@@ -401,6 +409,9 @@ func (h *Handler) PatchHumanResource(c *gin.Context) {
 	}
 	if in.HasMedical != nil {
 		add("has_medical=", *in.HasMedical)
+	}
+	if in.PiiDate != nil {
+		add("pii_date=", *in.PiiDate)
 	}
 	if in.RoleName != nil {
 		add("role_name=", *in.RoleName)
@@ -499,7 +510,7 @@ func (h *Handler) PatchHumanResource(c *gin.Context) {
 		return
 	}
 	setParts = append(setParts, "updated_at=now()")
-	query := "update human_resources set " + strings.Join(setParts, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,org,address,phone,status,is_completed,has_medical,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests"
+	query := "update human_resources set " + strings.Join(setParts, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,org,address,phone,status,is_completed,has_medical,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests"
 	args = append(args, id)
 	row := h.pool.QueryRow(context.Background(), query, args...)
 
@@ -514,7 +525,8 @@ func (h *Handler) PatchHumanResource(c *gin.Context) {
 	var totalReq, activeReq, completedReq, cancelledReq *int
 	var totalRoles, completedRoles, pendingRoles *int
 	var urgentReq, medicalReq *int
-	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStartTs, &shiftEndTs, &shiftNotes, &assignmentTimestamp, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
+	var piiDate3 *int64
+	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &piiDate3, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStartTs, &shiftEndTs, &shiftNotes, &assignmentTimestamp, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
@@ -523,6 +535,7 @@ func (h *Handler) PatchHumanResource(c *gin.Context) {
 		return
 	}
 	hr.HasMedical = hasMedical
+	hr.PiiDate = piiDate3
 	hr.Skills = skills
 	hr.Certifications = certs
 	hr.LanguageRequirements = langs
