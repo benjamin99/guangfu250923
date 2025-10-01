@@ -60,6 +60,8 @@ func main() {
 	r.Use(middleware.CacheHeaders(0))
 	// Security headers (CSP/etc.)
 	r.Use(middleware.SecurityHeaders())
+	// IP / Country filter for POST/PATCH (uses Cf-Ipcountry header internally)
+	r.Use(middleware.IPFilter())
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
 	// Swagger UI with custom configuration
