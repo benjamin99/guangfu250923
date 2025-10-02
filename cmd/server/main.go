@@ -47,6 +47,7 @@ func main() {
 			"https://pinkowo.github.io/",
 			"https://guangfu250923-map.pttapp.cc",
 			"https://hualian-typhoon-frontend.zeabur.app",
+			"https://hualian-typhoon-frontend-dev.zeabur.app",
 			"https://sites.google.com/view/guangfu250923",
 			"https://692001998-atari-embeds.googleusercontent.com",
 			"https://*-atari-embeds.googleusercontent.com",

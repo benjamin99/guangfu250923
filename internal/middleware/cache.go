@@ -162,7 +162,7 @@ func cacheControlForPath(pattern, rawQuery string) string {
 		return "no-store"
 	}
 	// Highly dynamic aggregated embedding: disable cache to reflect near real-time changes
-	if strings.Contains(rawQuery, "embed=all") && pattern == "/supplies" {
+	if pattern == "/supplies" || pattern == "/human_resources" {
 		// 需要即時回應
 		return "public, no-cache"
 	}
