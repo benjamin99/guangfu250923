@@ -1943,11 +1943,11 @@ components:
           readOnly: true
     HumanResourceCreate:
       type: object
-      required: [org,address,phone,status,is_completed,role_name,role_type,headcount_need,headcount_got,role_status]
+      required: [org,address,status,is_completed,role_name,role_type,headcount_need,headcount_got,role_status]
       properties:
         org: { type: string }
         address: { type: string }
-        phone: { type: string }
+        phone: { type: string, nullable: true }
         status: { type: string }
         is_completed: { type: boolean }
         has_medical: { type: boolean, nullable: true }

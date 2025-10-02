@@ -213,7 +213,7 @@ type HumanResource struct {
 	ID                      string   `json:"id"`
 	Org                     string   `json:"org"`
 	Address                 string   `json:"address"`
-	Phone                   string   `json:"phone"`
+	Phone                   *string  `json:"phone"`
 	Status                  string   `json:"status"`
 	IsCompleted             bool     `json:"is_completed"`
 	HasMedical              *bool    `json:"has_medical"`

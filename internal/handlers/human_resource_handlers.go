@@ -242,7 +242,8 @@ func (h *Handler) CreateHumanResource(c *gin.Context) {
 		return
 	}
 	// Basic required validation
-	requiredStr := map[string]string{"org": in.Org, "address": in.Address, "phone": in.Phone, "status": in.Status, "role_name": in.RoleName, "role_type": in.RoleType, "role_status": in.RoleStatus}
+	// phone 不再必填，移除必填檢查；若未提供將以空字串寫入 (DB 目前允許非空/空字串)
+	requiredStr := map[string]string{"org": in.Org, "address": in.Address, "status": in.Status, "role_name": in.RoleName, "role_type": in.RoleType, "role_status": in.RoleStatus}
 	for k, v := range requiredStr {
 		if strings.TrimSpace(v) == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": k + " is required"})

@@ -203,7 +203,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             id text primary key,
             org text not null,
             address text not null,
-            phone text not null,
+            phone text,
             status text not null,
             is_completed boolean not null,
             has_medical boolean,
@@ -239,6 +239,13 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             urgent_requests int,
             medical_requests int
         )`,
+		// Relax NOT NULL if previously set
+		`do $$ begin
+        perform 1 from information_schema.columns where table_name='human_resources' and column_name='phone' and is_nullable='NO';
+        if found then
+          alter table human_resources alter column phone drop not null;
+        end if;
+      end $$;`,
 		`create index if not exists idx_human_resources_status on human_resources(status)`,
 		`create index if not exists idx_human_resources_role_status on human_resources(role_status)`,
 		`create index if not exists idx_restrooms_status on restrooms(status)`,
