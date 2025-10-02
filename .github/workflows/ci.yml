@@ -165,3 +165,22 @@ jobs:
       - name: Show created tag
         run: |
           echo "Created release tag: $TAG"
+
+      - name: Trigger upgrade-service (production)
+        if: github.ref == 'refs/heads/main'
+        env:
+          UPDATE_API_KEY: ${{ secrets.UPDATER_API_KEY }}
+        run: |
+          echo "Triggering remote updater..."
+          ATTEMPTS=5
+          URL="https://guangfu250923.pttapp.cc/upgrade-service"
+          for i in $(seq 1 $ATTEMPTS); do
+            STATUS=$(curl -s -o resp.json -w '%{http_code}' -H "X-API-Key: $UPDATE_API_KEY" "$URL" || true)
+            echo "Attempt $i -> HTTP $STATUS"
+            cat resp.json || true
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "202" ]; then
+              echo "Updater triggered successfully."; exit 0; fi
+            sleep 5
+          done
+          echo "Failed to trigger updater after $ATTEMPTS attempts" >&2
+          exit 1
