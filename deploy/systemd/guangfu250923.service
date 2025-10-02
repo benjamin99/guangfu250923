@@ -1,0 +1,22 @@
+[Unit]
+Description=Guangfu 250923 API Service
+After=network.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+EnvironmentFile=/etc/guangfu250923.env
+# 服務執行檔路徑
+ExecStart=/usr/local/bin/guangfu250923
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+WorkingDirectory=/var/lib/guangfu250923
+# 記錄 stdout/stderr 到 journald
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

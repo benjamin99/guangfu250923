@@ -1,0 +1,21 @@
+[Unit]
+Description=Guangfu 250923 Updater Service
+After=network.target guangfu250923.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+Environment=UPDATE_API_KEY=change-me
+Environment=SERVICE_NAME=guangfu250923
+Environment=INSTALL_PATH=/usr/local/bin/guangfu250923
+Environment=GITHUB_REPO=PichuChen/guangfu250923
+# 選用: 限縮資源
+# MemoryMax=200M
+# CPUQuota=50%
+ExecStart=/usr/local/bin/guangfu-updater
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
