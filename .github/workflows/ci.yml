@@ -118,3 +118,50 @@ jobs:
     steps:
       - name: Report
         run: echo "All required jobs finished."
+
+  release:
+    name: Auto Release
+    runs-on: ubuntu-latest
+    needs: [summary]
+    if: startsWith(github.ref, 'refs/heads/')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build release binary (linux amd64)
+        run: |
+          mkdir -p dist
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o dist/guangfu250923 ./cmd/server
+          sha256sum dist/guangfu250923 > dist/guangfu250923.sha256
+
+      - name: Create tag & GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+            # Timestamp based version to avoid collisions
+          TS=$(date -u +%Y%m%d%H%M%S)
+          TAG="v${TS}-${SHORT_SHA}"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "Creating release $TAG for $GITHUB_REF ($GITHUB_SHA)"
+          {
+            echo "Automated release from $GITHUB_REF";
+            echo;
+            echo "Commit: $GITHUB_SHA";
+          } > release_notes.txt
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file release_notes.txt \
+            dist/guangfu250923 dist/guangfu250923.sha256
+
+      - name: Show created tag
+        run: |
+          echo "Created release tag: $TAG"
