@@ -141,6 +141,8 @@ jobs:
           mkdir -p dist
           GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o dist/guangfu250923 ./cmd/server
           sha256sum dist/guangfu250923 > dist/guangfu250923.sha256
+          cp openapi.yaml dist/openapi.yaml
+          sha256sum dist/openapi.yaml > dist/openapi.yaml.sha256
 
       - name: Create tag & GitHub Release
         env:
@@ -160,7 +162,8 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file release_notes.txt \
-            dist/guangfu250923 dist/guangfu250923.sha256
+            dist/guangfu250923 dist/guangfu250923.sha256 \
+            dist/openapi.yaml dist/openapi.yaml.sha256
 
       - name: Show created tag
         run: |
