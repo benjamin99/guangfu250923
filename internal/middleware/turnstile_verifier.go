@@ -13,6 +13,11 @@ func TurnstileVerifier() gin.HandlerFunc {
 	verifier := turnstile.NewTokenVerifier(os.Getenv("TURNSTILE_SECRET_KEY"))
 
 	return func(c *gin.Context) {
+		if os.Getenv("VERIFY_TURNSTILE") == "false" {
+			c.Next()
+			return
+		}
+
 		token := c.GetHeader("X-ReCaptcha-Token")
 		if token == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "ReCaptcha token is required"})
