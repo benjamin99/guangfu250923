@@ -8,13 +8,18 @@ import (
 	"time"
 )
 
-const turnstileVerifyURL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+const defaultTurnstileVerifyURL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
+type VerifyOptions struct {
+	Token    string
+	RemoteIP string
+}
 type TokenVerifier interface {
-	Verify(token string) (bool, error)
+	Verify(opt VerifyOptions) (bool, error)
 }
 
 type TokenVerifierImpl struct {
+	apiURL    string
 	secretKey string
 	client    *http.Client
 }
@@ -22,6 +27,7 @@ type TokenVerifierImpl struct {
 type verifyRequest struct {
 	Secret   string `json:"secret"`
 	Response string `json:"response"`
+	RemoteIP string `json:"remoteip,omitempty"`
 }
 
 type verifyResponse struct {
@@ -32,23 +38,34 @@ type verifyResponse struct {
 	Action      string   `json:"action,omitempty"`
 }
 
-func NewTokenVerifier(secretKey string) TokenVerifier {
+type NewTokenVerifierOptions struct {
+	APIURL    string
+	SecretKey string
+}
+
+func NewTokenVerifier(opt NewTokenVerifierOptions) TokenVerifier {
+	if opt.APIURL == "" {
+		opt.APIURL = defaultTurnstileVerifyURL
+	}
+
 	return &TokenVerifierImpl{
-		secretKey: secretKey,
+		apiURL:    opt.APIURL,
+		secretKey: opt.SecretKey,
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
 }
 
-func (v *TokenVerifierImpl) Verify(token string) (bool, error) {
-	if token == "" {
+func (v *TokenVerifierImpl) Verify(opt VerifyOptions) (bool, error) {
+	if opt.Token == "" {
 		return false, fmt.Errorf("token is empty")
 	}
 
 	reqBody := verifyRequest{
 		Secret:   v.secretKey,
-		Response: token,
+		Response: opt.Token,
+		RemoteIP: opt.RemoteIP,
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -56,7 +73,7 @@ func (v *TokenVerifierImpl) Verify(token string) (bool, error) {
 		return false, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := v.client.Post(turnstileVerifyURL, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := v.client.Post(v.apiURL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, fmt.Errorf("failed to send verification request: %w", err)
 	}
