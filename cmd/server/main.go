@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -146,6 +148,15 @@ func main() {
 	r.GET("/reports", h.ListReports)
 	r.GET("/reports/:id", h.GetReport)
 	r.PATCH("/reports/:id", h.PatchReport)
+
+	// Turnstile test endpoint (POST only): echo JSON payload for frontend debugging
+	r.POST("/__test_turnstile", middleware.TurnstileVerifier(), func(c *gin.Context) {
+		var payload any
+		if b, err := io.ReadAll(c.Request.Body); err == nil {
+			_ = json.Unmarshal(b, &payload)
+		}
+		c.JSON(http.StatusOK, gin.H{"ok": true, "payload": payload})
+	})
 
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: r}
 	log.Printf("server listening on :%s", cfg.Port)

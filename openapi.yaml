@@ -689,6 +689,24 @@ paths:
         '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/HumanResource' } } } }
         '400': { description: 輸入錯誤 }
         '404': { description: 找不到 }
+  /__test_turnstile:
+    post:
+      operationId: testTurnstile
+      summary: 測試 Turnstile 驗證
+      description: 前端提交 Turnstile token 以測試和後端之間的 Turnstile 串接是否成功。僅供測試用途。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cf-turnstile-response: { type: string, description: 'Turnstile 驗證回傳 token，欄位名稱需為 cf-turnstile-response' }
+              required: [cf-turnstile-response]
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean }, payload: { type: object } } } } } }
+        '400': { description: 輸入錯誤 }
+        '401': { description: 驗證失敗 }
   /supplies:
     get:
       operationId: listSupplies
