@@ -140,14 +140,12 @@ Resources:
 - `/supplies` + `/supply_items` - Supply warehouses and inventory
 - `/reports` - Incident reports
 
-### Sheet Cache
-`GET /sheet/snapshot` returns cached data from Google Sheets (if configured via `SHEET_ID` env var).
-Background polling refreshes cache every `SHEET_REFRESH_SEC` seconds.
-
 ## Deployment
 
 Systemd service files and deployment guide: `deploy/README.md`
 - `guangfu250923.service` - Main API service
-- `guangfu-updater.service` - Automated update service (downloads releases from GitHub)
 
 Environment variables documented in `deploy/README.md` and `.env.example`.
+
+**Note**: the `guangfu-updater.service` service is deprecated, and it CAN be IGNORED.
+**Note**: the `Sheet Cache` related implementaions is also being deprecated, and it should be removed in the future.
