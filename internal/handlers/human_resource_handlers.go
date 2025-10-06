@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +14,8 @@ import (
 
 	"guangfu250923/internal/models"
 )
+
+var ErrHumanResourceNotFound = errors.New("human resource not found")
 
 // ListHumanResources returns paginated human resource rows
 func (h *Handler) ListHumanResources(c *gin.Context) {
@@ -143,9 +146,7 @@ func join(parts []string, sep string) string {
 	return out
 }
 
-// GetHumanResource fetch single by id
-func (h *Handler) GetHumanResource(c *gin.Context) {
-	id := c.Param("id")
+func (h *Handler) getHumanResourceWithID(id string) (*models.HumanResource, error) {
 	row := h.pool.QueryRow(context.Background(), `select id,org,address,phone,status,is_completed,has_medical,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests from human_resources where id=$1`, id)
 	var hr models.HumanResource
 	var skills, certs, langs []string
@@ -161,11 +162,9 @@ func (h *Handler) GetHumanResource(c *gin.Context) {
 	var piiDate *int64
 	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &piiDate, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStart, &shiftEnd, &shiftNotes, &assignmentTs, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
 		if err == pgx.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-			return
+			return nil, ErrHumanResourceNotFound
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return nil, err
 	}
 	hr.HasMedical = hasMedical
 	hr.PiiDate = piiDate
@@ -191,6 +190,21 @@ func (h *Handler) GetHumanResource(c *gin.Context) {
 	hr.PendingRoles = pendingRoles
 	hr.UrgentRequests = urgentReq
 	hr.MedicalRequests = medicalReq
+	return &hr, nil
+}
+
+// GetHumanResource fetch single by id
+func (h *Handler) GetHumanResource(c *gin.Context) {
+	id := c.Param("id")
+	hr, err := h.getHumanResourceWithID(id)
+	if err != nil {
+		if errors.Is(err, ErrHumanResourceNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, hr)
 }
 
@@ -276,6 +290,8 @@ func (h *Handler) CreateHumanResource(c *gin.Context) {
 	shiftStart := toTime(in.ShiftStartTs)
 	shiftEnd := toTime(in.ShiftEndTs)
 	assignmentTs := toTime(in.AssignmentTimestamp)
+
+	// TODO: add the implementation for valid_pin
 
 	// NOTE: keep column count in sync with values placeholders (1..35). If you add/remove a column update both lists.
 	sql := `insert into human_resources (
@@ -375,15 +391,31 @@ type humanResourcePatchInput struct {
 	PendingRoles            *int     `json:"pending_roles"`
 	UrgentRequests          *int     `json:"urgent_requests"`
 	MedicalRequests         *int     `json:"medical_requests"`
+	ValidPin                *string  `json:"valid_pin"`
 }
 
 func (h *Handler) PatchHumanResource(c *gin.Context) {
-	id := c.Param("id")
 	var in humanResourcePatchInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	id := c.Param("id")
+	resource, err := h.getHumanResourceWithID(id)
+	if err != nil {
+		if errors.Is(err, ErrHumanResourceNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if !checkStringPtrEqual(resource.ValidPin, in.ValidPin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid valid_pin", "reason": "valid pin is not match"})
+		return
+	}
+
 	setParts := []string{}
 	args := []interface{}{}
 	idx := 1

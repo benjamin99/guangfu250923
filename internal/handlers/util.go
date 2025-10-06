@@ -20,3 +20,16 @@ func parsePositiveInt(raw string, defaultValue, min, max int) int {
 	}
 	return v
 }
+
+// checkStringPtrEqual checks if the following condition is met:
+// - both are nil
+// - both are not nil and are holding the same value
+func checkStringPtrEqual(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}

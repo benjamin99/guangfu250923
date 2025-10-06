@@ -248,6 +248,7 @@ type HumanResource struct {
 	PendingRoles            *int     `json:"pending_roles"`
 	UrgentRequests          *int     `json:"urgent_requests"`
 	MedicalRequests         *int     `json:"medical_requests"`
+	ValidPin                *string  `json:"valid_pin"`
 }
 
 // Supply represents supplies table row
@@ -258,6 +259,7 @@ type Supply struct {
 	Phone     *string `json:"phone"`
 	Notes     *string `json:"notes"`
 	PiiDate   *int64  `json:"pii_date"`
+	ValidPin  *string `json:"valid_pin"`
 	CreatedAt int64   `json:"created_at"`
 	UpdatedAt int64   `json:"updated_at"`
 }
