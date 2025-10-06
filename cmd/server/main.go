@@ -91,43 +91,52 @@ func main() {
 	r.POST("/shelters", h.CreateShelter)
 	r.GET("/shelters", h.ListShelters)
 	r.GET("/shelters/:id", h.GetShelter)
-	r.PATCH("/shelters/:id", h.PatchShelter)
+	// 2025-10-06 要求先關起來
+	// r.PATCH("/shelters/:id", h.PatchShelter)
 	r.POST("/medical_stations", h.CreateMedicalStation)
 	r.GET("/medical_stations", h.ListMedicalStations)
 	r.GET("/medical_stations/:id", h.GetMedicalStation)
-	r.PATCH("/medical_stations/:id", h.PatchMedicalStation)
+	// 2025-10-06 要求先關起來
+	// r.PATCH("/medical_stations/:id", h.PatchMedicalStation)
 	r.POST("/mental_health_resources", h.CreateMentalHealthResource)
 	r.GET("/mental_health_resources", h.ListMentalHealthResources)
 	r.GET("/mental_health_resources/:id", h.GetMentalHealthResource)
-	r.PATCH("/mental_health_resources/:id", h.PatchMentalHealthResource)
+	// 2025-10-06 要求先關起來
+	// r.PATCH("/mental_health_resources/:id", h.PatchMentalHealthResource)
 	r.POST("/accommodations", h.CreateAccommodation)
 	r.GET("/accommodations", h.ListAccommodations)
 	r.GET("/accommodations/:id", h.GetAccommodation)
-	r.PATCH("/accommodations/:id", h.PatchAccommodation)
+	// 2025-10-06 要求先關起來
+	// r.PATCH("/accommodations/:id", h.PatchAccommodation)
 	r.POST("/shower_stations", h.CreateShowerStation)
 	r.GET("/shower_stations", h.ListShowerStations)
 	r.GET("/shower_stations/:id", h.GetShowerStation)
-	r.PATCH("/shower_stations/:id", h.PatchShowerStation)
+	// 2025-10-06 要求先關起來
+	// r.PATCH("/shower_stations/:id", h.PatchShowerStation)
 
 	// Water refill stations
 	r.POST("/water_refill_stations", h.CreateWaterRefillStation)
 	r.GET("/water_refill_stations", h.ListWaterRefillStations)
 	r.GET("/water_refill_stations/:id", h.GetWaterRefillStation)
-	r.PATCH("/water_refill_stations/:id", h.PatchWaterRefillStation)
+	// 2025-10-06 要求先關起來
+	// r.PATCH("/water_refill_stations/:id", h.PatchWaterRefillStation)
 	// Restrooms
 	r.POST("/restrooms", h.CreateRestroom)
 	r.GET("/restrooms", h.ListRestrooms)
 	r.GET("/restrooms/:id", h.GetRestroom)
-	r.PATCH("/restrooms/:id", h.PatchRestroom)
+	// 2025-10-06 要求先關起來
+	// r.PATCH("/restrooms/:id", h.PatchRestroom)
 	r.POST("/volunteer_organizations", h.CreateVolunteerOrg)
 	r.GET("/volunteer_organizations", h.ListVolunteerOrgs)
 	r.GET("/volunteer_organizations/:id", h.GetVolunteerOrg)
-	r.PATCH("/volunteer_organizations/:id", h.PatchVolunteerOrg)
+	// 2025-10-06 要求先關起來
+	// r.PATCH("/volunteer_organizations/:id", h.PatchVolunteerOrg)
 	// Human resources
 	r.GET("/human_resources", h.ListHumanResources)
 	r.GET("/human_resources/:id", h.GetHumanResource)
 	r.POST("/human_resources", h.CreateHumanResource)
-	r.PATCH("/human_resources/:id", h.PatchHumanResource)
+	// 2025-10-06 要求先關起來
+	// r.PATCH("/human_resources/:id", h.PatchHumanResource)
 	// Supplies (new domain) & supply items (renamed from suppily)
 	r.POST("/supplies", h.CreateSupply)
 	r.GET("/supplies", h.ListSupplies)
