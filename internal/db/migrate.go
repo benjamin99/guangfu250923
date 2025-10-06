@@ -335,6 +335,10 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             updated_at timestamptz not null default now()
         )`,
 		`create index if not exists idx_ip_denylist_pattern on ip_denylist(pattern)`,
+		// Add valid_pin to human_resources
+		`alter table human_resources add column if not exists valid_pin text`,
+		// Add valid_pin to supplies
+		`alter table supplies add column if not exists valid_pin text`,
 	}
 	for _, s := range stmts {
 		if _, err := pool.Exec(ctx, s); err != nil {
