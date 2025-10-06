@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"guangfu250923/internal/models"
+	"guangfu250923/internal/utils"
 )
 
 var ErrHumanResourceNotFound = errors.New("human resource not found")
@@ -207,6 +208,11 @@ func (h *Handler) GetHumanResource(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// hide the valid_pin since we should not expose it to the clients
+	// FIXME: should should do better with different getters for different scenarios!
+	hr.ValidPin = nil
+
 	c.JSON(http.StatusOK, hr)
 }
 
@@ -292,15 +298,14 @@ func (h *Handler) CreateHumanResource(c *gin.Context) {
 	shiftStart := toTime(in.ShiftStartTs)
 	shiftEnd := toTime(in.ShiftEndTs)
 	assignmentTs := toTime(in.AssignmentTimestamp)
-
-	// TODO: add the implementation for valid_pin
+	validPin := utils.GenerateValidPin()
 
 	// NOTE: keep column count in sync with values placeholders (1..35). If you add/remove a column update both lists.
 	sql := `insert into human_resources (
-			id,org,address,phone,status,is_completed,has_medical,pii_date,role_name,role_type,skills,certifications,experience_level,language_requirements,headcount_need,headcount_got,headcount_unit,role_status,shift_start_ts,shift_end_ts,shift_notes,assignment_timestamp,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests
+			id,org,address,phone,status,is_completed,has_medical,pii_date,role_name,role_type,skills,certifications,experience_level,language_requirements,headcount_need,headcount_got,headcount_unit,role_status,shift_start_ts,shift_end_ts,shift_notes,assignment_timestamp,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests,valid_pin
 		) values (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36
-		) returning id,org,address,phone,status,is_completed,has_medical,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests`
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37
+		) returning id,org,address,phone,status,is_completed,has_medical,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests,valid_pin`
 
 	row := h.pool.QueryRow(context.Background(), sql,
 		id, in.Org, in.Address, in.Phone, in.Status, in.IsCompleted, in.HasMedical, in.PiiDate, in.RoleName, in.RoleType,
@@ -309,6 +314,7 @@ func (h *Handler) CreateHumanResource(c *gin.Context) {
 		shiftStart, shiftEnd, in.ShiftNotes, assignmentTs, in.AssignmentCount, in.AssignmentNotes,
 		in.TotalRolesInRequest, in.CompletedRolesInRequest, in.PendingRolesInRequest, in.TotalRequests, in.ActiveRequests,
 		in.CompletedRequests, in.CancelledRequests, in.TotalRoles, in.CompletedRoles, in.PendingRoles, in.UrgentRequests, in.MedicalRequests,
+		validPin,
 	)
 
 	var hr models.HumanResource
@@ -323,7 +329,8 @@ func (h *Handler) CreateHumanResource(c *gin.Context) {
 	var totalRoles, completedRoles, pendingRoles *int
 	var urgentReq, medicalReq *int
 	var piiDate2 *int64
-	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &piiDate2, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStartTs, &shiftEndTs, &shiftNotes, &assignmentTimestamp, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
+	var createdValidPin *string
+	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &piiDate2, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStartTs, &shiftEndTs, &shiftNotes, &assignmentTimestamp, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq, &validPin); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -351,6 +358,7 @@ func (h *Handler) CreateHumanResource(c *gin.Context) {
 	hr.PendingRoles = pendingRoles
 	hr.UrgentRequests = urgentReq
 	hr.MedicalRequests = medicalReq
+	hr.ValidPin = createdValidPin
 
 	c.JSON(http.StatusCreated, hr)
 }

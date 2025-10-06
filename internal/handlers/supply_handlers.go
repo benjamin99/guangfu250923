@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"guangfu250923/internal/models"
+	"guangfu250923/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -56,11 +57,10 @@ func (h *Handler) CreateSupply(c *gin.Context) {
 	}
 	defer tx.Rollback(ctx)
 
-	// TODO: add the implementation for setting up the valid_pin
-
+	validPin := utils.GenerateValidPin()
 	var id string
 	var created, updated int64
-	if err := tx.QueryRow(ctx, `insert into supplies(name,address,phone,notes,pii_date) values($1,$2,$3,$4,$5) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`, in.Name, in.Address, in.Phone, in.Notes, in.PiiDate).Scan(&id, &created, &updated); err != nil {
+	if err := tx.QueryRow(ctx, `insert into supplies(name,address,phone,notes,pii_date,valid_pin) values($1,$2,$3,$4,$5,$6) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`, in.Name, in.Address, in.Phone, in.Notes, in.PiiDate, validPin).Scan(&id, &created, &updated); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -85,7 +85,7 @@ func (h *Handler) CreateSupply(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	resp := gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Supply", "id": id, "name": in.Name, "address": in.Address, "phone": in.Phone, "notes": in.Notes, "pii_date": in.PiiDate, "created_at": created, "updated_at": updated, "supplies": createdItems}
+	resp := gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Supply", "id": id, "name": in.Name, "address": in.Address, "phone": in.Phone, "notes": in.Notes, "pii_date": in.PiiDate, "created_at": created, "updated_at": updated, "supplies": createdItems, "valid_pin": validPin}
 	c.JSON(http.StatusCreated, resp)
 }
 
@@ -234,6 +234,10 @@ func (h *Handler) GetSupply(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// hide the valid_pin since we should not expose it to the clients
+	// FIXME: should should do better with different getters for different scenarios!
+	s.ValidPin = nil
 
 	// fetch ALL items (could be zero)
 	rows, err := h.pool.Query(ctx, `select id,supply_id,tag,name,received_count,total_number,unit from supply_items where supply_id=$1 order by id asc`, s.ID)
