@@ -137,8 +137,8 @@ func main() {
 	r.GET("/human_resources", h.ListHumanResources)
 	r.GET("/human_resources/:id", h.GetHumanResource)
 	r.POST("/human_resources", h.CreateHumanResource)
-	// 2025-10-06 要求先關起來
-	// r.PATCH("/human_resources/:id", h.PatchHumanResource)
+	// 2025-10-06 因為需要用這個 api 進行到位人數確認，所以是唯一開放的 PATCH api
+	r.PATCH("/human_resources/:id", h.PatchHumanResource)
 	// Supplies (new domain) & supply items (renamed from suppily)
 	r.POST("/supplies", h.CreateSupply)
 	r.GET("/supplies", h.ListSupplies)
