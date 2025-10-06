@@ -147,7 +147,7 @@ func join(parts []string, sep string) string {
 }
 
 func (h *Handler) getHumanResourceWithID(id string) (*models.HumanResource, error) {
-	row := h.pool.QueryRow(context.Background(), `select id,org,address,phone,status,is_completed,has_medical,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests from human_resources where id=$1`, id)
+	row := h.pool.QueryRow(context.Background(), `select id,org,address,phone,status,is_completed,has_medical,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,role_name,role_type,coalesce(skills,'{}'),coalesce(certifications,'{}'),experience_level,coalesce(language_requirements,'{}'),headcount_need,headcount_got,headcount_unit,role_status,extract(epoch from shift_start_ts)::bigint,extract(epoch from shift_end_ts)::bigint,shift_notes,extract(epoch from assignment_timestamp)::bigint,assignment_count,assignment_notes,total_roles_in_request,completed_roles_in_request,pending_roles_in_request,total_requests,active_requests,completed_requests,cancelled_requests,total_roles,completed_roles,pending_roles,urgent_requests,medical_requests,valid_pin from human_resources where id=$1`, id)
 	var hr models.HumanResource
 	var skills, certs, langs []string
 	var hasMedical *bool
@@ -160,7 +160,8 @@ func (h *Handler) getHumanResourceWithID(id string) (*models.HumanResource, erro
 	var totalRoles, completedRoles, pendingRoles *int
 	var urgentReq, medicalReq *int
 	var piiDate *int64
-	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &piiDate, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStart, &shiftEnd, &shiftNotes, &assignmentTs, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq); err != nil {
+	var validPin *string
+	if err := row.Scan(&hr.ID, &hr.Org, &hr.Address, &hr.Phone, &hr.Status, &hr.IsCompleted, &hasMedical, &piiDate, &hr.CreatedAt, &hr.UpdatedAt, &hr.RoleName, &hr.RoleType, &skills, &certs, &expLevel, &langs, &hr.HeadcountNeed, &hr.HeadcountGot, &headUnit, &hr.RoleStatus, &shiftStart, &shiftEnd, &shiftNotes, &assignmentTs, &hr.AssignmentCount, &assignmentNotes, &totalRolesInReq, &completedRolesInReq, &pendingRolesInReq, &totalReq, &activeReq, &completedReq, &cancelledReq, &totalRoles, &completedRoles, &pendingRoles, &urgentReq, &medicalReq, &validPin); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrHumanResourceNotFound
 		}
@@ -190,6 +191,7 @@ func (h *Handler) getHumanResourceWithID(id string) (*models.HumanResource, erro
 	hr.PendingRoles = pendingRoles
 	hr.UrgentRequests = urgentReq
 	hr.MedicalRequests = medicalReq
+	hr.ValidPin = validPin
 	return &hr, nil
 }
 

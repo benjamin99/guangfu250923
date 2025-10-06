@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,6 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
+
+var ErrSupplyNotFound = errors.New("supply not found")
 
 type supplyCreateInput struct {
 	Name     *string           `json:"name"`
@@ -36,6 +39,7 @@ type supplyItemCreateInput struct { // 保留原獨立建立 endpoint 使用
 	Name       *string `json:"name"`
 	TotalCount int     `json:"total_count" binding:"required"`
 	Unit       *string `json:"unit"`
+	ValidPin   *string `json:"valid_pin"`
 }
 
 func (h *Handler) CreateSupply(c *gin.Context) {
@@ -51,6 +55,9 @@ func (h *Handler) CreateSupply(c *gin.Context) {
 		return
 	}
 	defer tx.Rollback(ctx)
+
+	// TODO: add the implementation for setting up the valid_pin
+
 	var id string
 	var created, updated int64
 	if err := tx.QueryRow(ctx, `insert into supplies(name,address,phone,notes,pii_date) values($1,$2,$3,$4,$5) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`, in.Name, in.Address, in.Phone, in.Notes, in.PiiDate).Scan(&id, &created, &updated); err != nil {
@@ -190,29 +197,44 @@ func (h *Handler) ListSupplies(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"@context": "https://www.w3.org/ns/hydra/context.jsonld", "@type": "Collection", "totalItems": total, "member": wrapped, "limit": limit, "offset": offset, "next": next, "previous": prev})
 }
 
-func (h *Handler) GetSupply(c *gin.Context) {
-	id := c.Param("id")
-	ctx := context.Background()
-	row := h.pool.QueryRow(ctx, `select id,name,address,phone,notes,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supplies where id=$1`, id)
+func (h *Handler) getSupplyWithID(id string) (*models.Supply, error) {
+	row := h.pool.QueryRow(context.Background(), `select id,name,address,phone,notes,pii_date,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint,valid_pin from supplies where id=$1`, id)
 	var s models.Supply
 	var name, addr, phone, notes *string
 	var piiDate *int64
+	var validPin *string
 	var created, updated int64
-	if err := row.Scan(&s.ID, &name, &addr, &phone, &notes, &piiDate, &created, &updated); err != nil {
+
+	if err := row.Scan(&s.ID, &name, &addr, &phone, &notes, &piiDate, &created, &updated, &validPin); err != nil {
 		if err == pgx.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-			return
+			return nil, ErrSupplyNotFound
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return nil, err
 	}
 	s.Name = name
 	s.Address = addr
 	s.Phone = phone
 	s.Notes = notes
 	s.PiiDate = piiDate
+	s.ValidPin = validPin
 	s.CreatedAt = created
 	s.UpdatedAt = updated
+	return &s, nil
+}
+
+func (h *Handler) GetSupply(c *gin.Context) {
+	id := c.Param("id")
+	ctx := context.Background()
+	s, err := h.getSupplyWithID(id)
+	if err != nil {
+		if errors.Is(err, ErrSupplyNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	// fetch ALL items (could be zero)
 	rows, err := h.pool.Query(ctx, `select id,supply_id,tag,name,received_count,total_number,unit from supply_items where supply_id=$1 order by id asc`, s.ID)
 	if err != nil {
@@ -238,20 +260,44 @@ func (h *Handler) GetSupply(c *gin.Context) {
 }
 
 type supplyPatchInput struct {
-	Name    *string `json:"name"`
-	Address *string `json:"address"`
-	Phone   *string `json:"phone"`
-	Notes   *string `json:"notes"`
-	PiiDate *int64  `json:"pii_date"`
+	Name     *string `json:"name"`
+	Address  *string `json:"address"`
+	Phone    *string `json:"phone"`
+	Notes    *string `json:"notes"`
+	PiiDate  *int64  `json:"pii_date"`
+	ValidPin *string `json:"valid_pin"`
 }
 
 func (h *Handler) PatchSupply(c *gin.Context) {
+	/* TODO: should re-write the logic here with the following flow:
+	1. try to load the supply record by id
+	2. check for the existence of the record, if not found, return 404
+	3. check for the valid_pin if it exists on the record. if not match, should return forbidden error
+	4. update the supply with the new values
+	*/
+
 	id := c.Param("id")
 	var in supplyPatchInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	s, err := h.getSupplyWithID(id)
+	if err != nil {
+		if errors.Is(err, ErrSupplyNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if !checkStringPtrEqual(s.ValidPin, in.ValidPin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid valid_pin", "reason": "valid pin is not match"})
+		return
+	}
+
 	setParts := []string{}
 	args := []interface{}{}
 	idx := 1
@@ -284,7 +330,7 @@ func (h *Handler) PatchSupply(c *gin.Context) {
 	args = append(args, id)
 	ctx := context.Background()
 	row := h.pool.QueryRow(ctx, query, args...)
-	var s models.Supply
+
 	var name, addr, phone, notes *string
 	var piiDate *int64
 	var created, updated int64
@@ -303,6 +349,7 @@ func (h *Handler) PatchSupply(c *gin.Context) {
 	s.PiiDate = piiDate
 	s.CreatedAt = created
 	s.UpdatedAt = updated
+	// TODO: should we hide the valid_pin here?
 	c.JSON(http.StatusOK, s)
 }
 
@@ -312,9 +359,21 @@ func (h *Handler) CreateSupplyItem(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	s, err := h.getSupplyWithID(in.SupplyID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	if !checkStringPtrEqual(s.ValidPin, in.ValidPin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid valid_pin", "reason": "valid pin is not match"})
+		return
+	}
+
+	// TODO: should replace with c.Request.Context()
 	ctx := context.Background()
+
 	var id string
-	err := h.pool.QueryRow(ctx, `insert into supply_items(supply_id,tag,name,total_number,unit) values($1,$2,$3,$4,$5) returning id`, in.SupplyID, in.Tag, in.Name, in.TotalCount, in.Unit).Scan(&id)
+	err = h.pool.QueryRow(ctx, `insert into supply_items(supply_id,tag,name,total_number,unit) values($1,$2,$3,$4,$5) returning id`, in.SupplyID, in.Tag, in.Name, in.TotalCount, in.Unit).Scan(&id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -392,15 +451,51 @@ type supplyItemPatchInput struct {
 	ReceivedCount *int    `json:"recieved_count"`
 	TotalNumber   *int    `json:"total_count"`
 	Unit          *string `json:"unit"`
+	ValidPin      *string `json:"valid_pin"`
+}
+
+func (h *Handler) getParentSupplyWithItemID(id string) (*models.Supply, error) {
+	row := h.pool.QueryRow(context.Background(), `select id, valid_pin from supplies where id=(select supply_id from supply_items where id=$1)`, id)
+	var supply models.Supply
+	if err := row.Scan(&supply.ID, &supply.ValidPin); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, ErrSupplyNotFound
+		}
+		return nil, err
+	}
+	return &supply, nil
 }
 
 func (h *Handler) PatchSupplyItem(c *gin.Context) {
+	/* TODO: should re-write the logic here with the following flow:
+	1. try to load the supply item record by id
+	2. check for the existence of the record, if not found, return 404
+	3. check for the valid_pin if it exists on the record. if not match, should return forbidden error
+	4. update the supply item with the new values
+	*/
+
 	id := c.Param("id")
+	parentSupply, err := h.getParentSupplyWithItemID(id)
+	if err != nil {
+		if errors.Is(err, ErrSupplyNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "supply not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	var in supplyItemPatchInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	if !checkStringPtrEqual(parentSupply.ValidPin, in.ValidPin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid valid_pin", "reason": "valid pin is not match"})
+		return
+	}
+
 	// Validation if counts involved
 	if in.ReceivedCount != nil || in.TotalNumber != nil {
 		ctxCheck := context.Background()
