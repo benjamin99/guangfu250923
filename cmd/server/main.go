@@ -94,30 +94,35 @@ func main() {
 	r.POST("/shelters", h.CreateShelter)
 	r.GET("/shelters", h.ListShelters)
 	r.GET("/shelters/:id", h.GetShelter)
+	r.DELETE("/shelters/:id", middleware.ModifyAPIKeyRequired(), h.DeleteShelter)
 	// 2025-10-06 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/shelters/:id", middleware.ModifyAPIKeyRequired(), h.PatchShelter)
 	r.POST("/medical_stations", h.CreateMedicalStation)
 	r.GET("/medical_stations", h.ListMedicalStations)
 	r.GET("/medical_stations/:id", h.GetMedicalStation)
+	r.DELETE("/medical_stations/:id", middleware.ModifyAPIKeyRequired(), h.DeleteMedicalStation)
 	// 2025-10-06 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/medical_stations/:id", middleware.ModifyAPIKeyRequired(), h.PatchMedicalStation)
 	r.POST("/mental_health_resources", h.CreateMentalHealthResource)
 	r.GET("/mental_health_resources", h.ListMentalHealthResources)
 	r.GET("/mental_health_resources/:id", h.GetMentalHealthResource)
+	r.DELETE("/mental_health_resources/:id", middleware.ModifyAPIKeyRequired(), h.DeleteMentalHealthResource)
 	// 2025-10-06 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/mental_health_resources/:id", middleware.ModifyAPIKeyRequired(), h.PatchMentalHealthResource)
 	r.POST("/accommodations", h.CreateAccommodation)
 	r.GET("/accommodations", h.ListAccommodations)
 	r.GET("/accommodations/:id", h.GetAccommodation)
+	r.DELETE("/accommodations/:id", middleware.ModifyAPIKeyRequired(), h.DeleteAccommodation)
 	// 2025-10-06 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/accommodations/:id", middleware.ModifyAPIKeyRequired(), h.PatchAccommodation)
 	r.POST("/shower_stations", h.CreateShowerStation)
 	r.GET("/shower_stations", h.ListShowerStations)
 	r.GET("/shower_stations/:id", h.GetShowerStation)
+	r.DELETE("/shower_stations/:id", middleware.ModifyAPIKeyRequired(), h.DeleteShowerStation)
 	// 2025-10-06 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/shower_stations/:id", middleware.ModifyAPIKeyRequired(), h.PatchShowerStation)
@@ -126,6 +131,7 @@ func main() {
 	r.POST("/water_refill_stations", h.CreateWaterRefillStation)
 	r.GET("/water_refill_stations", h.ListWaterRefillStations)
 	r.GET("/water_refill_stations/:id", h.GetWaterRefillStation)
+	r.DELETE("/water_refill_stations/:id", middleware.ModifyAPIKeyRequired(), h.DeleteWaterRefillStation)
 	// 2025-10-06 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/water_refill_stations/:id", middleware.ModifyAPIKeyRequired(), h.PatchWaterRefillStation)
@@ -133,12 +139,14 @@ func main() {
 	r.POST("/restrooms", h.CreateRestroom)
 	r.GET("/restrooms", h.ListRestrooms)
 	r.GET("/restrooms/:id", h.GetRestroom)
+	r.DELETE("/restrooms/:id", middleware.ModifyAPIKeyRequired(), h.DeleteRestroom)
 	// 2025-10-06 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/restrooms/:id", h.PatchRestroom)
 	r.POST("/volunteer_organizations", h.CreateVolunteerOrg)
 	r.GET("/volunteer_organizations", h.ListVolunteerOrgs)
 	r.GET("/volunteer_organizations/:id", h.GetVolunteerOrg)
+	r.DELETE("/volunteer_organizations/:id", middleware.ModifyAPIKeyRequired(), h.DeleteVolunteerOrg)
 	// 2025-10-06 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/volunteer_organizations/:id", middleware.ModifyAPIKeyRequired(), h.PatchVolunteerOrg)
@@ -146,6 +154,7 @@ func main() {
 	r.GET("/human_resources", h.ListHumanResources)
 	r.GET("/human_resources/:id", h.GetHumanResource)
 	r.POST("/human_resources", h.CreateHumanResource)
+	r.DELETE("/human_resources/:id", middleware.ModifyAPIKeyRequired(), h.DeleteHumanResource)
 	// 2025-10-06 因為需要用這個 api 進行到位人數確認，所以是唯一開放的 PATCH api
 	// 2025-10-08 驗證 API Key：在 handler 內部判斷是否僅更新 status/is_completed/headcount_got，若非僅更新這三者才要求 API Key
 	r.PATCH("/human_resources/:id", h.PatchHumanResource)
@@ -153,6 +162,7 @@ func main() {
 	r.POST("/supplies", h.CreateSupply)
 	r.GET("/supplies", h.ListSupplies)
 	r.GET("/supplies/:id", h.GetSupply)
+	r.DELETE("/supplies/:id", middleware.ModifyAPIKeyRequired(), h.DeleteSupply)
 	// 2025-10-01 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/supplies/:id", middleware.ModifyAPIKeyRequired(), h.PatchSupply)
@@ -160,6 +170,7 @@ func main() {
 	r.POST("/supply_items", h.CreateSupplyItem)
 	r.GET("/supply_items", h.ListSupplyItems)
 	r.GET("/supply_items/:id", h.GetSupplyItem)
+	r.DELETE("/supply_items/:id", middleware.ModifyAPIKeyRequired(), h.DeleteSupplyItem)
 	// 2025-10-01 要求先關起來
 	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
 	r.PATCH("/supply_items/:id", middleware.ModifyAPIKeyRequired(), h.PatchSupplyItem)

@@ -9,7 +9,7 @@ import (
 )
 
 // ModifyAPIKeyRequired enforces that the request includes an API key that exists in ALLOW_MODIFY_API_KEY_LIST.
-// Accepted headers: X-API-Key: <key> or Authorization: Bearer <key>
+// Accepted headers: X-Api-Key: <key> or Authorization: Bearer <key>
 // If ALLOW_MODIFY_API_KEY_LIST is empty, all requests are rejected.
 func ModifyAPIKeyRequired() gin.HandlerFunc {
 	// Parse env allowlist once per middleware instance
@@ -20,7 +20,7 @@ func ModifyAPIKeyRequired() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		key := strings.TrimSpace(c.GetHeader("X-API-Key"))
+		key := strings.TrimSpace(c.GetHeader("X-Api-Key"))
 		if key == "" {
 			// Try Authorization: Bearer <key>
 			auth := c.GetHeader("Authorization")
@@ -48,14 +48,14 @@ func parseAllowlist(s string) map[string]bool {
 	return m
 }
 
-// IsAPIKeyAllowed returns true if the request carries an API key (X-API-Key or Bearer) contained in ALLOW_MODIFY_API_KEY_LIST.
+// IsAPIKeyAllowed returns true if the request carries an API key (X-Api-Key or Bearer) contained in ALLOW_MODIFY_API_KEY_LIST.
 // When the allowlist is empty, it returns false.
 func IsAPIKeyAllowed(c *gin.Context) bool {
 	allowed := parseAllowlist(os.Getenv("ALLOW_MODIFY_API_KEY_LIST"))
 	if len(allowed) == 0 {
 		return false
 	}
-	key := strings.TrimSpace(c.GetHeader("X-API-Key"))
+	key := strings.TrimSpace(c.GetHeader("X-Api-Key"))
 	if key == "" {
 		auth := c.GetHeader("Authorization")
 		if strings.HasPrefix(strings.ToLower(auth), "bearer ") {
