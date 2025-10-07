@@ -183,6 +183,12 @@ func main() {
 	r.GET("/reports/:id", h.GetReport)
 	r.PATCH("/reports/:id", h.PatchReport)
 
+	// Spam detection results
+	r.POST("/spam_results", h.CreateSpamResult)
+	r.GET("/spam_results", h.ListSpamResults)
+	r.GET("/spam_results/:id", h.GetSpamResult)
+	r.PATCH("/spam_results/:id", h.PatchSpamResult)
+
 	// Turnstile test endpoint (POST only): echo JSON payload for frontend debugging
 	r.POST("/__test_turnstile", middleware.TurnstileVerifier(), func(c *gin.Context) {
 		var payload any
