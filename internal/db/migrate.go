@@ -338,6 +338,17 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             updated_at timestamptz not null default now()
         )`,
 		`create index if not exists idx_ip_denylist_pattern on ip_denylist(pattern)`,
+		// Spam detection results from LLM validation
+		`create table if not exists spam_result (
+            id text primary key,
+            target_id text not null,
+            target_type text not null,
+            target_data jsonb not null,
+            is_spam boolean not null,
+            judgment text not null,
+            validated_at bigint not null
+        )`,
+		`create index if not exists idx_spam_result_target_id on spam_result(target_id)`,
 	}
 	for _, s := range stmts {
 		if _, err := pool.Exec(ctx, s); err != nil {
