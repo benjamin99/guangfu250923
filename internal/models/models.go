@@ -285,3 +285,14 @@ type Report struct {
 	CreatedAt    int64   `json:"created_at"`
 	UpdatedAt    int64   `json:"updated_at"`
 }
+
+// SpamResult represents spam_result table row
+type SpamResult struct {
+	ID          string                 `json:"id"`
+	TargetID    string                 `json:"target_id"`
+	TargetType  string                 `json:"target_type"`
+	TargetData  map[string]interface{} `json:"target_data"`
+	IsSpam      bool                   `json:"is_spam"`
+	Judgment    string                 `json:"judgment"`
+	ValidatedAt int64                  `json:"validated_at"`
+}
