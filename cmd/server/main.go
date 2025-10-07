@@ -42,20 +42,17 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"*",
-			"http://localhost:5173",
+			"http://localhost:5173", // 一般開發用
 			"http://127.0.0.1:5500",
 			"http://localhost:5050",
 			"http://127.0.0.1:5050",
-			"https://pinkowo.github.io",
-			"https://guangfu250923-map.pttapp.cc",
-			"https://hualian-typhoon-frontend.zeabur.app",
-			"https://hualian-typhoon-frontend-dev.zeabur.app",
-			"https://sites.google.com/view/guangfu250923",
-			"https://692001998-atari-embeds.googleusercontent.com",
-			"https://*-atari-embeds.googleusercontent.com",
-			"https://hualien-volunteers-frontend-iota.vercel.app",
-			"https://guangfu-hero.pttapp.cc",
-			"https://gf250923.org",
+			"https://pinkowo.github.io",           // pink 開發用
+			"https://guangfu250923-map.pttapp.cc", // https://guangfu250923-map.pttapp.cc/map.html
+			// "https://sites.google.com/view/guangfu250923", // 從未使用
+			// "https://hero-guagfu.github.io", // 不應該使用了
+			"https://hualien-volunteers-frontend-iota.vercel.app", // 志工媒合在這邊
+			"https://guangfu-hero.pttapp.cc",                      // 要拿掉了
+			"https://gf250923.org",                                // 新主站
 		},
 		AllowMethods: []string{"GET", "POST", "PATCH", "OPTIONS"},
 		// Add "User-Agent" to satisfy Safari (it sometimes includes it in Access-Control-Request-Headers)
