@@ -84,6 +84,18 @@ paths:
         '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/VolunteerOrganization' } } } }
         '400': { description: 輸入錯誤 }
         '404': { description: 找不到 }
+    delete:
+      operationId: deleteVolunteerOrg
+      summary: 刪除志工招募單位
+      description: 依 ID 刪除一筆志工招募單位資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
+        '404': { description: 找不到 }
   /shelters:
     get:
       operationId: listShelters
@@ -125,6 +137,18 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Shelter' } } } }
+        '404': { description: 找不到 }
+    delete:
+      operationId: deleteShelter
+      summary: 刪除庇護所
+      description: 依 ID 刪除一筆庇護所資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
         '404': { description: 找不到 }
     patch:
       operationId: patchShelter
@@ -188,6 +212,18 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MedicalStation' } } } }
+        '404': { description: 找不到 }
+    delete:
+      operationId: deleteMedicalStation
+      summary: 刪除醫療站
+      description: 依 ID 刪除一筆醫療站資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
         '404': { description: 找不到 }
     patch:
       operationId: patchMedicalStation
@@ -254,6 +290,18 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/MentalHealthResource' } } } }
+        '404': { description: 找不到 }
+    delete:
+      operationId: deleteMentalHealthResource
+      summary: 刪除心理健康資源
+      description: 依 ID 刪除一筆心理健康資源資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
         '404': { description: 找不到 }
     patch:
       operationId: patchMentalHealthResource
@@ -381,6 +429,18 @@ paths:
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Accommodation' } } } }
         '404': { description: 找不到 }
+    delete:
+      operationId: deleteAccommodation
+      summary: 刪除住宿資源
+      description: 依 ID 刪除一筆住宿資源資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
+        '404': { description: 找不到 }
     patch:
       operationId: patchAccommodation
       summary: 更新住宿資源 (部分欄位)
@@ -450,6 +510,18 @@ paths:
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/ShowerStation' } } } }
         '404': { description: 找不到 }
+    delete:
+      operationId: deleteShowerStation
+      summary: 刪除洗澡點
+      description: 依 ID 刪除一筆洗澡/盥洗點資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
+        '404': { description: 找不到 }
     patch:
       operationId: patchShowerStation
       summary: 更新洗澡點 (部分欄位)
@@ -518,6 +590,18 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/WaterRefillStation' } } } }
+        '404': { description: 找不到 }
+    delete:
+      operationId: deleteWaterRefillStation
+      summary: 刪除飲用水補給站
+      description: 依 ID 刪除一筆飲用水補給站資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
         '404': { description: 找不到 }
     patch:
       operationId: patchWaterRefillStation
@@ -590,6 +674,18 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Restroom' } } } }
+        '404': { description: 找不到 }
+    delete:
+      operationId: deleteRestroom
+      summary: 刪除廁所點
+      description: 依 ID 刪除一筆廁所點資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
         '404': { description: 找不到 }
     patch:
       operationId: patchRestroom
@@ -671,6 +767,18 @@ paths:
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/HumanResource' } } } }
         '404': { description: 找不到 }
+    delete:
+      operationId: deleteHumanResource
+      summary: 刪除人力需求/角色
+      description: 依 ID 刪除一筆人力需求/角色資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: 刪除成功，無內容 }
+        '404': { description: 找不到 }
     patch:
       operationId: patchHumanResource
       summary: 更新人力需求/角色 (部分欄位)
@@ -751,6 +859,18 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/Supply' } } } }
+        '404': { description: 找不到 }
+    delete:
+      operationId: deleteSupply
+      summary: 刪除供應單
+      description: 依 ID 刪除一筆供應單資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
         '404': { description: 找不到 }
     patch:
       operationId: patchSupply
@@ -838,6 +958,18 @@ paths:
       responses:
         '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyItem' } } } }
         '404': { description: 找不到 }
+    delete:
+      operationId: deleteSupplyItem
+      summary: 刪除物資項目
+      description: 依 ID 刪除一筆物資項目資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 刪除成功，無內容 }
+        '404': { description: 找不到 }
     patch:
       operationId: patchSupplyItem
       summary: 更新物資項目 (部分欄位) (停用)
@@ -857,6 +989,14 @@ paths:
         '400': { description: 輸入錯誤 }
         '404': { description: 找不到 }
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     CollectionBase:
       type: object
