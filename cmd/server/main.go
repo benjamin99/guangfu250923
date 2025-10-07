@@ -57,7 +57,7 @@ func main() {
 		AllowMethods: []string{"GET", "POST", "PATCH", "OPTIONS"},
 		// Add "User-Agent" to satisfy Safari (it sometimes includes it in Access-Control-Request-Headers)
 		// You may broaden this further or use "*" if you trust clients and want less friction.
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "User-Agent"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "User-Agent", "X-Api-Key"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: false,
 		MaxAge:           43200 * time.Second, // 12h
@@ -95,63 +95,74 @@ func main() {
 	r.GET("/shelters", h.ListShelters)
 	r.GET("/shelters/:id", h.GetShelter)
 	// 2025-10-06 要求先關起來
-	// r.PATCH("/shelters/:id", h.PatchShelter)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/shelters/:id", middleware.ModifyAPIKeyRequired(), h.PatchShelter)
 	r.POST("/medical_stations", h.CreateMedicalStation)
 	r.GET("/medical_stations", h.ListMedicalStations)
 	r.GET("/medical_stations/:id", h.GetMedicalStation)
 	// 2025-10-06 要求先關起來
-	// r.PATCH("/medical_stations/:id", h.PatchMedicalStation)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/medical_stations/:id", middleware.ModifyAPIKeyRequired(), h.PatchMedicalStation)
 	r.POST("/mental_health_resources", h.CreateMentalHealthResource)
 	r.GET("/mental_health_resources", h.ListMentalHealthResources)
 	r.GET("/mental_health_resources/:id", h.GetMentalHealthResource)
 	// 2025-10-06 要求先關起來
-	// r.PATCH("/mental_health_resources/:id", h.PatchMentalHealthResource)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/mental_health_resources/:id", middleware.ModifyAPIKeyRequired(), h.PatchMentalHealthResource)
 	r.POST("/accommodations", h.CreateAccommodation)
 	r.GET("/accommodations", h.ListAccommodations)
 	r.GET("/accommodations/:id", h.GetAccommodation)
 	// 2025-10-06 要求先關起來
-	// r.PATCH("/accommodations/:id", h.PatchAccommodation)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/accommodations/:id", middleware.ModifyAPIKeyRequired(), h.PatchAccommodation)
 	r.POST("/shower_stations", h.CreateShowerStation)
 	r.GET("/shower_stations", h.ListShowerStations)
 	r.GET("/shower_stations/:id", h.GetShowerStation)
 	// 2025-10-06 要求先關起來
-	// r.PATCH("/shower_stations/:id", h.PatchShowerStation)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/shower_stations/:id", middleware.ModifyAPIKeyRequired(), h.PatchShowerStation)
 
 	// Water refill stations
 	r.POST("/water_refill_stations", h.CreateWaterRefillStation)
 	r.GET("/water_refill_stations", h.ListWaterRefillStations)
 	r.GET("/water_refill_stations/:id", h.GetWaterRefillStation)
 	// 2025-10-06 要求先關起來
-	// r.PATCH("/water_refill_stations/:id", h.PatchWaterRefillStation)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/water_refill_stations/:id", middleware.ModifyAPIKeyRequired(), h.PatchWaterRefillStation)
 	// Restrooms
 	r.POST("/restrooms", h.CreateRestroom)
 	r.GET("/restrooms", h.ListRestrooms)
 	r.GET("/restrooms/:id", h.GetRestroom)
 	// 2025-10-06 要求先關起來
-	// r.PATCH("/restrooms/:id", h.PatchRestroom)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/restrooms/:id", h.PatchRestroom)
 	r.POST("/volunteer_organizations", h.CreateVolunteerOrg)
 	r.GET("/volunteer_organizations", h.ListVolunteerOrgs)
 	r.GET("/volunteer_organizations/:id", h.GetVolunteerOrg)
 	// 2025-10-06 要求先關起來
-	// r.PATCH("/volunteer_organizations/:id", h.PatchVolunteerOrg)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/volunteer_organizations/:id", middleware.ModifyAPIKeyRequired(), h.PatchVolunteerOrg)
 	// Human resources
 	r.GET("/human_resources", h.ListHumanResources)
 	r.GET("/human_resources/:id", h.GetHumanResource)
 	r.POST("/human_resources", h.CreateHumanResource)
 	// 2025-10-06 因為需要用這個 api 進行到位人數確認，所以是唯一開放的 PATCH api
+	// 2025-10-08 驗證 API Key：在 handler 內部判斷是否僅更新 status/is_completed/headcount_got，若非僅更新這三者才要求 API Key
 	r.PATCH("/human_resources/:id", h.PatchHumanResource)
 	// Supplies (new domain) & supply items (renamed from suppily)
 	r.POST("/supplies", h.CreateSupply)
 	r.GET("/supplies", h.ListSupplies)
 	r.GET("/supplies/:id", h.GetSupply)
 	// 2025-10-01 要求先關起來
-	// r.PATCH("/supplies/:id", h.PatchSupply)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/supplies/:id", middleware.ModifyAPIKeyRequired(), h.PatchSupply)
 	r.POST("/supplies/:id", h.DistributeSupplyItems) // 批次配送 (累加 recieved_count)
 	r.POST("/supply_items", h.CreateSupplyItem)
 	r.GET("/supply_items", h.ListSupplyItems)
 	r.GET("/supply_items/:id", h.GetSupplyItem)
 	// 2025-10-01 要求先關起來
-	// r.PATCH("/supply_items/:id", h.PatchSupplyItem)
+	// 2025-10-08 打開來，但是要求驗證 API Key， 提供第三方進行資料同步
+	r.PATCH("/supply_items/:id", middleware.ModifyAPIKeyRequired(), h.PatchSupplyItem)
 	// Admin: request logs
 	r.GET("/_admin/request_logs", h.ListRequestLogs)
 

@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"guangfu250923/internal/models"
+	"guangfu250923/internal/middleware"
 )
 
 // ListHumanResources returns paginated human resource rows
@@ -394,6 +395,13 @@ func (h *Handler) PatchHumanResource(c *gin.Context) {
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+	// API key requirement: if this patch is not limited to status/is_completed/headcount_got, require API key to be allowed.
+	if !isOnlyUpdateStatusIsCompletedHeadcountGot(in) {
+		if !middleware.IsAPIKeyAllowed(c) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "api key required"})
+			return
+		}
 	}
 	// Optional verification (controlled by VERIFY_HR_PIN)
 	if os.Getenv("VERIFY_HR_PIN") == "true" {
