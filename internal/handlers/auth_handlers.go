@@ -94,11 +94,16 @@ func (h *Handler) StartLineAuth(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	feRedirectURI := c.Query("redirect_uri")
 	// LINE authorize URL
 	v := url.Values{}
 	v.Set("response_type", "code")
 	v.Set("client_id", os.Getenv("LINE_CHANNEL_ID"))
-	v.Set("redirect_uri", os.Getenv("LINE_REDIRECT_URI"))
+	if feRedirectURI != "" {
+		v.Set("redirect_uri", feRedirectURI)
+	} else {
+		v.Set("redirect_uri", os.Getenv("LINE_REDIRECT_URI"))
+	}
 	v.Set("state", tok)
 	v.Set("scope", "profile openid email")
 	authURL := "https://access.line.me/oauth2/v2.1/authorize?" + v.Encode()
