@@ -111,8 +111,9 @@ func (h *Handler) StartLineAuth(c *gin.Context) {
 }
 
 type lineTokenReq struct {
-	Code  string `json:"code"`
-	State string `json:"state"`
+	Code        string  `json:"code"`
+	State       string  `json:"state"`
+	RedirectURI *string `json:"redirect_uri"` // optional, if differs from env
 }
 
 type lineTokenResp struct {
@@ -147,7 +148,11 @@ func (h *Handler) ExchangeLineToken(c *gin.Context) {
 	form := url.Values{}
 	form.Set("grant_type", "authorization_code")
 	form.Set("code", in.Code)
-	form.Set("redirect_uri", os.Getenv("LINE_REDIRECT_URI"))
+	if in.RedirectURI != nil && *in.RedirectURI != "" {
+		form.Set("redirect_uri", *in.RedirectURI)
+	} else {
+		form.Set("redirect_uri", os.Getenv("LINE_REDIRECT_URI"))
+	}
 	form.Set("client_id", os.Getenv("LINE_CHANNEL_ID"))
 	form.Set("client_secret", os.Getenv("LINE_CHANNEL_SECRET"))
 
