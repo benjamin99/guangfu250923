@@ -9,17 +9,6 @@ import (
 // Simple idempotent migrations.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	stmts := []string{
-		// Coordinates sync helper function: sync NEW.coordinates from NEW.lat/NEW.lng
-		`create or replace function set_coordinates_from_lat_lng() returns trigger as $$
-        begin
-          if NEW.lat is null and NEW.lng is null then
-            NEW.coordinates := null;
-          else
-            NEW.coordinates := jsonb_build_object('lat', NEW.lat, 'lng', NEW.lng);
-          end if;
-          return NEW;
-        end;
-        $$ language plpgsql`,
 		`create table if not exists volunteer_organizations (
             id uuid primary key default gen_random_uuid(),
             last_updated timestamptz,
@@ -48,17 +37,12 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             facilities text[],
             contact_person text,
             notes text,
-            lat double precision,
-            lng double precision,
             opening_hours text,
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,
 		`create index if not exists idx_shelters_status on shelters(status)`,
 		`alter table if exists shelters add column if not exists coordinates jsonb`,
-		`update shelters set coordinates = case when lat is null and lng is null then null else jsonb_build_object('lat', lat, 'lng', lng) end where coordinates is null`,
-		`drop trigger if exists trg_set_coords_shelters on shelters`,
-		`create trigger trg_set_coords_shelters before insert or update of lat, lng on shelters for each row execute function set_coordinates_from_lat_lng()`,
 		`create table if not exists medical_stations (
             id uuid primary key default gen_random_uuid(),
             station_type text not null,
@@ -73,8 +57,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             operating_hours text,
             medical_staff int,
             daily_capacity int,
-            lat double precision,
-            lng double precision,
             affiliated_organization text,
             notes text,
             link text,
@@ -84,9 +66,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_medical_stations_status on medical_stations(status)`,
 		`create index if not exists idx_medical_stations_station_type on medical_stations(station_type)`,
 		`alter table if exists medical_stations add column if not exists coordinates jsonb`,
-		`update medical_stations set coordinates = case when lat is null and lng is null then null else jsonb_build_object('lat', lat, 'lng', lng) end where coordinates is null`,
-		`drop trigger if exists trg_set_coords_medical_stations on medical_stations`,
-		`create trigger trg_set_coords_medical_stations before insert or update of lat, lng on medical_stations for each row execute function set_coordinates_from_lat_lng()`,
 		`create table if not exists mental_health_resources (
             id uuid primary key default gen_random_uuid(),
             duration_type text not null,
@@ -100,8 +79,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             languages text[],
             is_free boolean not null,
             location text,
-            lat double precision,
-            lng double precision,
             status text not null,
             capacity int,
             waiting_time text,
@@ -113,9 +90,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_mh_resources_status on mental_health_resources(status)`,
 		`create index if not exists idx_mh_resources_duration_type on mental_health_resources(duration_type)`,
 		`alter table if exists mental_health_resources add column if not exists coordinates jsonb`,
-		`update mental_health_resources set coordinates = case when lat is null and lng is null then null else jsonb_build_object('lat', lat, 'lng', lng) end where coordinates is null`,
-		`drop trigger if exists trg_set_coords_mental_health_resources on mental_health_resources`,
-		`create trigger trg_set_coords_mental_health_resources before insert or update of lat, lng on mental_health_resources for each row execute function set_coordinates_from_lat_lng()`,
 		`create table if not exists accommodations (
             id uuid primary key default gen_random_uuid(),
             township text not null,
@@ -134,8 +108,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             registration_method text,
             facilities text[],
             distance_to_disaster_area text,
-            lat double precision,
-            lng double precision,
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,
@@ -143,9 +115,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_accommodations_township on accommodations(township)`,
 		`create index if not exists idx_accommodations_has_vacancy on accommodations(has_vacancy)`,
 		`alter table if exists accommodations add column if not exists coordinates jsonb`,
-		`update accommodations set coordinates = case when lat is null and lng is null then null else jsonb_build_object('lat', lat, 'lng', lng) end where coordinates is null`,
-		`drop trigger if exists trg_set_coords_accommodations on accommodations`,
-		`create trigger trg_set_coords_accommodations before insert or update of lat, lng on accommodations for each row execute function set_coordinates_from_lat_lng()`,
 		`create table if not exists shower_stations (
             id uuid primary key default gen_random_uuid(),
             name text not null,
@@ -165,8 +134,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             distance_to_guangfu text,
             requires_appointment boolean not null,
             contact_method text,
-            lat double precision,
-            lng double precision,
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,
@@ -175,9 +142,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_shower_stations_is_free on shower_stations(is_free)`,
 		`create index if not exists idx_shower_stations_requires_appointment on shower_stations(requires_appointment)`,
 		`alter table if exists shower_stations add column if not exists coordinates jsonb`,
-		`update shower_stations set coordinates = case when lat is null and lng is null then null else jsonb_build_object('lat', lat, 'lng', lng) end where coordinates is null`,
-		`drop trigger if exists trg_set_coords_shower_stations on shower_stations`,
-		`create trigger trg_set_coords_shower_stations before insert or update of lat, lng on shower_stations for each row execute function set_coordinates_from_lat_lng()`,
 		`create table if not exists water_refill_stations (
             id uuid primary key default gen_random_uuid(),
             name text not null,
@@ -195,8 +159,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             distance_to_disaster_area text,
             notes text,
             info_source text,
-            lat double precision,
-            lng double precision,
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,
@@ -205,9 +167,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_water_refill_is_free on water_refill_stations(is_free)`,
 		`create index if not exists idx_water_refill_accessibility on water_refill_stations(accessibility)`,
 		`alter table if exists water_refill_stations add column if not exists coordinates jsonb`,
-		`update water_refill_stations set coordinates = case when lat is null and lng is null then null else jsonb_build_object('lat', lat, 'lng', lng) end where coordinates is null`,
-		`drop trigger if exists trg_set_coords_water_refill_stations on water_refill_stations`,
-		`create trigger trg_set_coords_water_refill_stations before insert or update of lat, lng on water_refill_stations for each row execute function set_coordinates_from_lat_lng()`,
 		`create table if not exists restrooms (
             id uuid primary key default gen_random_uuid(),
             name text not null,
@@ -229,8 +188,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             distance_to_disaster_area text,
             notes text,
             info_source text,
-            lat double precision,
-            lng double precision,
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,
@@ -291,9 +248,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_restrooms_has_water on restrooms(has_water)`,
 		`create index if not exists idx_restrooms_has_lighting on restrooms(has_lighting)`,
 		`alter table if exists restrooms add column if not exists coordinates jsonb`,
-		`update restrooms set coordinates = case when lat is null and lng is null then null else jsonb_build_object('lat', lat, 'lng', lng) end where coordinates is null`,
-		`drop trigger if exists trg_set_coords_restrooms on restrooms`,
-		`create trigger trg_set_coords_restrooms before insert or update of lat, lng on restrooms for each row execute function set_coordinates_from_lat_lng()`,
 		`create table if not exists request_logs (
             id uuid primary key default gen_random_uuid(),
             method text not null,
