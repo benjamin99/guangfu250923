@@ -1057,6 +1057,68 @@ paths:
         '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyItem' } } } }
         '400': { description: 輸入錯誤 }
         '404': { description: 找不到 }
+  /supply_providers:
+    get:
+      operationId: listSupplyProviders
+      summary: 取得物資提供站點清單 (分頁)
+      description: 分頁列出所有物資提供站點，可用 supply_item_id 過濾特定物資項目的站點；採 JSON-LD Collection 格式。
+      parameters:
+        - in: query
+          name: supply_item_id
+          schema: { type: string, format: uuid }
+          description: 過濾指定物資項目的站點
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyProviderCollection' } } } }
+    post:
+      operationId: createSupplyProvider
+      summary: 建立物資提供站點
+      description: 新增一筆物資提供站點資料，必須關聯到既有的物資項目 (supply_item_id)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SupplyProviderCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyProvider' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 關聯的物資項目不存在 }
+  /supply_providers/{id}:
+    get:
+      operationId: getSupplyProvider
+      summary: 取得單一物資提供站點
+      description: 依物資提供站點 UUID 取得其詳細資訊。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyProvider' } } } }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchSupplyProvider
+      summary: 更新物資提供站點 (部分欄位)
+      description: 部分更新物資提供站點欄位；若更新 supply_item_id 則驗證其存在性，並自動更新 updated_at。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SupplyProviderPatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/SupplyProvider' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -2360,6 +2422,42 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/SupplyItem' }
+    SupplyProvider:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        phone: { type: string }
+        supply_item_id: { type: string, format: uuid }
+        address: { type: string }
+        note: { type: string }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+    SupplyProviderCreate:
+      type: object
+      required: [name,phone,supply_item_id,address,note]
+      properties:
+        name: { type: string }
+        phone: { type: string }
+        supply_item_id: { type: string, format: uuid }
+        address: { type: string }
+        note: { type: string }
+    SupplyProviderPatch:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        supply_item_id: { type: string, format: uuid, nullable: true }
+        address: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+    SupplyProviderCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/SupplyProvider' }
     Report:
       type: object
       properties:
