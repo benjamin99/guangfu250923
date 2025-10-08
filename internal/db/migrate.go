@@ -10,7 +10,7 @@ import (
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	stmts := []string{
 		`create table if not exists volunteer_organizations (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             last_updated timestamptz,
             registration_status text,
             organization_nature text,
@@ -25,7 +25,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
         )`,
 		`create index if not exists idx_vol_org_updated on volunteer_organizations(last_updated)`,
 		`create table if not exists shelters (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             name text not null,
             location text not null,
             phone text not null,
@@ -44,7 +44,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_shelters_status on shelters(status)`,
 		`alter table if exists shelters add column if not exists coordinates jsonb`,
 		`create table if not exists medical_stations (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             station_type text not null,
             name text not null,
             location text not null,
@@ -67,7 +67,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_medical_stations_station_type on medical_stations(station_type)`,
 		`alter table if exists medical_stations add column if not exists coordinates jsonb`,
 		`create table if not exists mental_health_resources (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             duration_type text not null,
             name text not null,
             service_format text not null,
@@ -91,7 +91,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_mh_resources_duration_type on mental_health_resources(duration_type)`,
 		`alter table if exists mental_health_resources add column if not exists coordinates jsonb`,
 		`create table if not exists accommodations (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             township text not null,
             name text not null,
             has_vacancy text not null,
@@ -116,7 +116,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_accommodations_has_vacancy on accommodations(has_vacancy)`,
 		`alter table if exists accommodations add column if not exists coordinates jsonb`,
 		`create table if not exists shower_stations (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             name text not null,
             address text not null,
             phone text,
@@ -143,7 +143,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_shower_stations_requires_appointment on shower_stations(requires_appointment)`,
 		`alter table if exists shower_stations add column if not exists coordinates jsonb`,
 		`create table if not exists water_refill_stations (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             name text not null,
             address text not null,
             phone text,
@@ -168,7 +168,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_water_refill_accessibility on water_refill_stations(accessibility)`,
 		`alter table if exists water_refill_stations add column if not exists coordinates jsonb`,
 		`create table if not exists restrooms (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             name text not null,
             address text not null,
             phone text,
@@ -266,7 +266,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
         )`,
 		// New simplified supplies domain (replaces legacy requests/supply_items usage)
 		`create table if not exists supplies (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             name text,
             address text,
             phone text,
@@ -279,8 +279,8 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_supplies_updated_at on supplies(updated_at)`,
 		/* Renamed to supply_items (previously 'suppily_items') */
 		`create table if not exists supply_items (
-            id uuid primary key default gen_random_uuid(),
-            supply_id uuid not null references supplies(id) on delete cascade,
+            id text primary key default gen_random_uuid()::text,
+            supply_id text not null references supplies(id) on delete cascade,
             tag text,
             name text,
             received_count int not null default 0,
@@ -324,7 +324,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_reports_updated_at on reports(updated_at)`,
 		// IP denylist for middleware (single IP or CIDR patterns)
 		`create table if not exists ip_denylist (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key default gen_random_uuid()::text,
             pattern text not null,
             reason text,
             created_at timestamptz not null default now(),
