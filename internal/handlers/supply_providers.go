@@ -9,6 +9,7 @@ import (
 	"guangfu250923/internal/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -38,12 +39,16 @@ func (h *Handler) CreateSupplyProvider(c *gin.Context) {
 		return
 	}
 
-	var (
-		id               string
-		created, updated int64
-	)
-	err := h.pool.QueryRow(ctx, `insert into supply_providers(name,phone,supply_item_id,address,note) values($1,$2,$3,$4,$5) returning id,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
-		in.Name, in.Phone, in.SupplyItemID, in.Address, in.Note).Scan(&id, &created, &updated)
+	newUUID, err := uuid.NewV7()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate id"})
+		return
+	}
+	id := newUUID.String()
+
+	var created, updated int64
+	err = h.pool.QueryRow(ctx, `insert into supply_providers(id,name,phone,supply_item_id,address,note) values($1,$2,$3,$4,$5,$6) returning extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
+		id, in.Name, in.Phone, in.SupplyItemID, in.Address, in.Note).Scan(&created, &updated)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -344,10 +344,10 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		`create index if not exists idx_spam_result_target_id on spam_result(target_id)`,
 		// Supply item providers
 		`create table if not exists supply_providers (
-            id uuid primary key default gen_random_uuid(),
+            id text primary key,
             name text not null,
             phone text not null,
-            supply_item_id uuid not null references supply_items(id) on delete cascade,
+            supply_item_id text not null,
             address text not null,
             note text not null,
             created_at timestamptz not null default now(),
