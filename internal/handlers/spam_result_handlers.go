@@ -10,11 +10,11 @@ import (
 	"guangfu250923/internal/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
 type spamResultCreateInput struct {
-	ID         string                 `json:"id" binding:"required"`
 	TargetID   string                 `json:"target_id" binding:"required"`
 	TargetType string                 `json:"target_type" binding:"required"`
 	TargetData map[string]interface{} `json:"target_data" binding:"required"`
@@ -34,8 +34,15 @@ func (h *Handler) CreateSpamResult(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	newUUID, err := uuid.NewV7()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate id"})
+		return
+	}
+
 	// Validate required fields
-	for field, val := range map[string]string{"id": in.ID, "target_id": in.TargetID, "target_type": in.TargetType, "judgment": in.Judgment} {
+	for field, val := range map[string]string{"target_id": in.TargetID, "target_type": in.TargetType, "judgment": in.Judgment} {
 		if strings.TrimSpace(val) == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": field + " is required"})
 			return
@@ -44,7 +51,7 @@ func (h *Handler) CreateSpamResult(c *gin.Context) {
 	validatedAt := time.Now().Unix()
 	ctx := context.Background()
 	row := h.pool.QueryRow(ctx, `insert into spam_result(id,target_id,target_type,target_data,is_spam,judgment,validated_at) values($1,$2,$3,$4,$5,$6,$7) returning id,target_id,target_type,target_data,is_spam,judgment,validated_at`,
-		in.ID, in.TargetID, in.TargetType, in.TargetData, in.IsSpam, in.Judgment, validatedAt)
+		newUUID.String(), in.TargetID, in.TargetType, in.TargetData, in.IsSpam, in.Judgment, validatedAt)
 	var sr models.SpamResult
 	if err := row.Scan(&sr.ID, &sr.TargetID, &sr.TargetType, &sr.TargetData, &sr.IsSpam, &sr.Judgment, &sr.ValidatedAt); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
