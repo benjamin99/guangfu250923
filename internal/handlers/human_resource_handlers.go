@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"guangfu250923/internal/models"
 	"guangfu250923/internal/middleware"
+	"guangfu250923/internal/models"
 )
 
 // ListHumanResources returns paginated human resource rows
