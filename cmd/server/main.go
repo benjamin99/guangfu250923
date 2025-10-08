@@ -192,6 +192,12 @@ func main() {
 	r.GET("/spam_results/:id", h.GetSpamResult)
 	r.PATCH("/spam_results/:id", middleware.APIKeyVerifier(spamResultAPIKey), h.PatchSpamResult)
 
+	// Supply item providers
+	r.POST("/supply_providers", h.CreateSupplyProvider)
+	r.GET("/supply_providers", h.ListSupplyProviders)
+	r.GET("/supply_providers/:id", h.GetSupplyProvider)
+	r.PATCH("/supply_providers/:id", h.PatchSupplyProvider)
+
 	// Turnstile test endpoint (POST only): echo JSON payload for frontend debugging
 	r.POST("/__test_turnstile", middleware.TurnstileVerifier(), func(c *gin.Context) {
 		var payload any
