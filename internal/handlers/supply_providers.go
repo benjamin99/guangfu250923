@@ -75,11 +75,18 @@ func (h *Handler) ListSupplyProviders(c *gin.Context) {
 	var total int
 	var rows pgx.Rows
 	var err error
+
 	if supplyItemID != "" {
-		h.pool.QueryRow(ctx, `select count(*) from supply_providers where supply_item_id=$1`, supplyItemID).Scan(&total)
+		if err := h.pool.QueryRow(ctx, `select count(*) from supply_providers where supply_item_id=$1`, supplyItemID).Scan(&total); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 		rows, err = h.pool.Query(ctx, `select id,name,phone,supply_item_id,address,note,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supply_providers where supply_item_id=$1 order by updated_at desc limit $2 offset $3`, supplyItemID, limit, offset)
 	} else {
-		h.pool.QueryRow(ctx, `select count(*) from supply_providers`).Scan(&total)
+		if err := h.pool.QueryRow(ctx, `select count(*) from supply_providers`).Scan(&total); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 		rows, err = h.pool.Query(ctx, `select id,name,phone,supply_item_id,address,note,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supply_providers order by updated_at desc limit $1 offset $2`, limit, offset)
 	}
 	if err != nil {
