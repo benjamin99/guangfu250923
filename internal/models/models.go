@@ -273,6 +273,18 @@ type SupplyItem struct {
 	Unit          *string `json:"unit"`
 }
 
+// SupplyProvider represents supply_providers table row
+type SupplyProvider struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Phone         string `json:"phone"`
+	SupplyItemID  string `json:"supply_item_id"`
+	Address       string `json:"address"`
+	Note          string `json:"note"`
+	CreatedAt     int64  `json:"created_at"`
+	UpdatedAt     int64  `json:"updated_at"`
+}
+
 // Report represents reports table row
 type Report struct {
 	ID           string  `json:"id"`

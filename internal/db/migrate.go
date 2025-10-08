@@ -342,6 +342,18 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             validated_at bigint not null
         )`,
 		`create index if not exists idx_spam_result_target_id on spam_result(target_id)`,
+		// Supply item providers
+		`create table if not exists supply_providers (
+            id uuid primary key default gen_random_uuid(),
+            name text not null,
+            phone text not null,
+            supply_item_id uuid not null references supply_items(id) on delete cascade,
+            address text not null,
+            note text not null,
+            created_at timestamptz not null default now(),
+            updated_at timestamptz not null default now()
+        )`,
+		`create index if not exists idx_supply_providers_supply_item_id on supply_providers(supply_item_id)`,
 	}
 	for _, s := range stmts {
 		if _, err := pool.Exec(ctx, s); err != nil {
