@@ -43,6 +43,10 @@ func RequestLogger(pool *pgxpool.Pool, maxHeaderBytes int) gin.HandlerFunc {
 		maxHeaderBytes = 16 * 1024
 	}
 	return func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/supply_providers") {
+			c.Next()
+			return
+		}
 		start := time.Now()
 		recorder := &responseRecorder{ResponseWriter: c.Writer, status: 200}
 		c.Writer = recorder
