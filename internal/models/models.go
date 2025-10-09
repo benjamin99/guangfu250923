@@ -280,7 +280,9 @@ type SupplyProvider struct {
 	Phone         string `json:"phone"`
 	SupplyItemID  string `json:"supply_item_id"`
 	Address       string `json:"address"`
-	Note          string `json:"note"`
+	Notes         *string `json:"notes"`
+	ProvideCount  int     `json:"provide_count"`
+	ProvideUnit   *string `json:"provide_unit"`
 	CreatedAt     int64  `json:"created_at"`
 	UpdatedAt     int64  `json:"updated_at"`
 }

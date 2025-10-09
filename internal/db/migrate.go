@@ -349,7 +349,9 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             phone text not null,
             supply_item_id text not null,
             address text not null,
-            note text not null,
+            notes text default '',
+            provide_count int not null,
+            provide_unit text,
             created_at timestamptz not null default now(),
             updated_at timestamptz not null default now()
         )`,

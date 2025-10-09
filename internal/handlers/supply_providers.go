@@ -14,11 +14,13 @@ import (
 )
 
 type supplyProviderCreateInput struct {
-	Name         string `json:"name" binding:"required"`
-	Phone        string `json:"phone" binding:"required"`
-	SupplyItemID string `json:"supply_item_id" binding:"required"`
-	Address      string `json:"address" binding:"required"`
-	Note         string `json:"note" binding:"required"`
+	Name         string  `json:"name" binding:"required"`
+	Phone        string  `json:"phone" binding:"required"`
+	SupplyItemID string  `json:"supply_item_id" binding:"required"`
+	Address      string  `json:"address" binding:"required"`
+	Notes        *string `json:"notes"`
+	ProvideCount int     `json:"provide_count" binding:"required"`
+	ProvideUnit  *string `json:"provide_unit"`
 }
 
 func (h *Handler) CreateSupplyProvider(c *gin.Context) {
@@ -47,8 +49,8 @@ func (h *Handler) CreateSupplyProvider(c *gin.Context) {
 	id := newUUID.String()
 
 	var created, updated int64
-	err = h.pool.QueryRow(ctx, `insert into supply_providers(id,name,phone,supply_item_id,address,note) values($1,$2,$3,$4,$5,$6) returning extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
-		id, in.Name, in.Phone, in.SupplyItemID, in.Address, in.Note).Scan(&created, &updated)
+	err = h.pool.QueryRow(ctx, `insert into supply_providers(id,name,phone,supply_item_id,address,notes,provide_count,provide_unit) values($1,$2,$3,$4,$5,$6,$7,$8) returning extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint`,
+		id, in.Name, in.Phone, in.SupplyItemID, in.Address, in.Notes, in.ProvideCount, in.ProvideUnit).Scan(&created, &updated)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -59,7 +61,9 @@ func (h *Handler) CreateSupplyProvider(c *gin.Context) {
 		Phone:        in.Phone,
 		SupplyItemID: in.SupplyItemID,
 		Address:      in.Address,
-		Note:         in.Note,
+		Notes:        in.Notes,
+		ProvideCount: in.ProvideCount,
+		ProvideUnit:  in.ProvideUnit,
 		CreatedAt:    created,
 		UpdatedAt:    updated,
 	}
@@ -81,13 +85,13 @@ func (h *Handler) ListSupplyProviders(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		rows, err = h.pool.Query(ctx, `select id,name,phone,supply_item_id,address,note,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supply_providers where supply_item_id=$1 order by updated_at desc limit $2 offset $3`, supplyItemID, limit, offset)
+		rows, err = h.pool.Query(ctx, `select id,name,phone,supply_item_id,address,notes,provide_count,provide_unit,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supply_providers where supply_item_id=$1 order by updated_at desc limit $2 offset $3`, supplyItemID, limit, offset)
 	} else {
 		if err := h.pool.QueryRow(ctx, `select count(*) from supply_providers`).Scan(&total); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		rows, err = h.pool.Query(ctx, `select id,name,phone,supply_item_id,address,note,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supply_providers order by updated_at desc limit $1 offset $2`, limit, offset)
+		rows, err = h.pool.Query(ctx, `select id,name,phone,supply_item_id,address,notes,provide_count,provide_unit,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supply_providers order by updated_at desc limit $1 offset $2`, limit, offset)
 	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -99,7 +103,7 @@ func (h *Handler) ListSupplyProviders(c *gin.Context) {
 	for rows.Next() {
 		var sp models.SupplyProvider
 		var created, updated int64
-		if err = rows.Scan(&sp.ID, &sp.Name, &sp.Phone, &sp.SupplyItemID, &sp.Address, &sp.Note, &created, &updated); err != nil {
+		if err = rows.Scan(&sp.ID, &sp.Name, &sp.Phone, &sp.SupplyItemID, &sp.Address, &sp.Notes, &sp.ProvideCount, &sp.ProvideUnit, &created, &updated); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -131,11 +135,11 @@ func (h *Handler) ListSupplyProviders(c *gin.Context) {
 func (h *Handler) GetSupplyProvider(c *gin.Context) {
 	id := c.Param("id")
 	ctx := context.Background()
-	row := h.pool.QueryRow(ctx, `select id,name,phone,supply_item_id,address,note,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supply_providers where id=$1`, id)
+	row := h.pool.QueryRow(ctx, `select id,name,phone,supply_item_id,address,notes,provide_count,provide_unit,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint from supply_providers where id=$1`, id)
 
 	var sp models.SupplyProvider
 	var created, updated int64
-	if err := row.Scan(&sp.ID, &sp.Name, &sp.Phone, &sp.SupplyItemID, &sp.Address, &sp.Note, &created, &updated); err != nil {
+	if err := row.Scan(&sp.ID, &sp.Name, &sp.Phone, &sp.SupplyItemID, &sp.Address, &sp.Notes, &sp.ProvideCount, &sp.ProvideUnit, &created, &updated); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
@@ -154,7 +158,9 @@ type supplyProviderPatchInput struct {
 	Phone        *string `json:"phone"`
 	SupplyItemID *string `json:"supply_item_id"`
 	Address      *string `json:"address"`
-	Note         *string `json:"note"`
+	Notes        *string `json:"notes"`
+	ProvideCount *int    `json:"provide_count"`
+	ProvideUnit  *string `json:"provide_unit"`
 }
 
 func (h *Handler) PatchSupplyProvider(c *gin.Context) {
@@ -198,8 +204,14 @@ func (h *Handler) PatchSupplyProvider(c *gin.Context) {
 	if in.Address != nil {
 		add("address=", *in.Address)
 	}
-	if in.Note != nil {
-		add("note=", *in.Note)
+	if in.Notes != nil {
+		add("notes=", *in.Notes)
+	}
+	if in.ProvideCount != nil {
+		add("provide_count=", *in.ProvideCount)
+	}
+	if in.ProvideUnit != nil {
+		add("provide_unit=", *in.ProvideUnit)
 	}
 	if len(setParts) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields"})
@@ -207,12 +219,12 @@ func (h *Handler) PatchSupplyProvider(c *gin.Context) {
 	}
 	// always update updated_at
 	setParts = append(setParts, "updated_at=now()")
-	query := "update supply_providers set " + strings.Join(setParts, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,name,phone,supply_item_id,address,note,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint"
+	query := "update supply_providers set " + strings.Join(setParts, ",") + " where id=$" + strconv.Itoa(idx) + " returning id,name,phone,supply_item_id,address,notes,provide_count,provide_unit,extract(epoch from created_at)::bigint,extract(epoch from updated_at)::bigint"
 	args = append(args, id)
 	row := h.pool.QueryRow(ctx, query, args...)
 	var sp models.SupplyProvider
 	var created, updated int64
-	if err := row.Scan(&sp.ID, &sp.Name, &sp.Phone, &sp.SupplyItemID, &sp.Address, &sp.Note, &created, &updated); err != nil {
+	if err := row.Scan(&sp.ID, &sp.Name, &sp.Phone, &sp.SupplyItemID, &sp.Address, &sp.Notes, &sp.ProvideCount, &sp.ProvideUnit, &created, &updated); err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
