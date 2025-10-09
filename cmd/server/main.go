@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"guangfu250923/internal/config"
@@ -66,6 +67,15 @@ func main() {
 	}))
 	// Request logging (after CORS so preflight OPTIONS not fully logged body wise)
 	r.Use(middleware.RequestLogger(pool, 0))
+	// In-memory GET cache (simple TTL) — must run before CacheHeaders to serve from memory when possible
+
+	cacheTTL, _ := strconv.Atoi(os.Getenv("MEM_CACHE_TTL_SEC"))
+	if cacheTTL <= 0 {
+		cacheTTL = 60 // default 60s
+	}
+	r.Use(middleware.MemoryCache(time.Duration(cacheTTL)*time.Second, 1<<20))
+	// Cache invalidator after handlers on writes; we place it early so it runs for all routes
+	r.Use(middleware.MemoryCacheInvalidator())
 	// Cache headers for GET responses
 	r.Use(middleware.CacheHeaders(0))
 	// Security headers (CSP/etc.)
