@@ -56,6 +56,9 @@ func MemoryCache(ttl time.Duration, maxBody int) gin.HandlerFunc {
 		if strings.HasPrefix(p, "/_admin/") || strings.HasPrefix(p, "/auth/") || p == "/healthz" {
 			return true
 		}
+		if strings.HasPrefix(p, "/swagger/") {
+			return true
+		}
 		return false
 	}
 
