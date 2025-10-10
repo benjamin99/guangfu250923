@@ -26,6 +26,7 @@ func MemoryCacheInvalidator() gin.HandlerFunc {
         "/reports",
         "/spam_results",
         "/supply_providers",
+        "/places",
     }
     return func(c *gin.Context) {
         method := c.Request.Method

@@ -208,6 +208,13 @@ func main() {
 	r.GET("/supply_providers/:id", h.GetSupplyProvider)
 	r.PATCH("/supply_providers/:id", h.PatchSupplyProvider)
 
+	// Places
+	r.POST("/places", h.CreatePlace)
+	r.GET("/places", h.ListPlaces)
+	r.GET("/places/:id", h.GetPlace)
+	r.DELETE("/places/:id", middleware.ModifyAPIKeyRequired(), h.DeletePlace)
+	r.PATCH("/places/:id", middleware.ModifyAPIKeyRequired(), h.PatchPlace)
+
 	// Turnstile test endpoint (POST only): echo JSON payload for frontend debugging
 	r.POST("/__test_turnstile", middleware.TurnstileVerifier(), func(c *gin.Context) {
 		var payload any

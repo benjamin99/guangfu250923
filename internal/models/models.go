@@ -310,3 +310,30 @@ type SpamResult struct {
 	Judgment    string                 `json:"judgment"`
 	ValidatedAt int64                  `json:"validated_at"`
 }
+
+// Place represents places table row
+type Place struct {
+	ID                string                   `json:"id"`
+	Name              string                   `json:"name"`
+	Address           string                   `json:"address"`
+	AddressDescription *string                 `json:"address_description"`
+	Coordinates       *struct{ Lat *float64 `json:"lat"`; Lng *float64 `json:"lng"` } `json:"coordinates"`
+	Type              string                   `json:"type"`
+	SubType           *string                  `json:"sub_type"`
+	InfoSources       []string                 `json:"info_sources"`
+	VerifiedAt        *int64                   `json:"verified_at"`
+	WebsiteURL        *string                  `json:"website_url"`
+	Status            string                   `json:"status"`
+	Resources         []map[string]interface{} `json:"resources"`
+	OpenDate          *string                  `json:"open_date"`
+	EndDate           *string                  `json:"end_date"`
+	OpenTime          *string                  `json:"open_time"`
+	EndTime           *string                  `json:"end_time"`
+	ContactName       string                   `json:"contact_name"`
+	ContactPhone      string                   `json:"contact_phone"`
+	Notes             *string                  `json:"notes"`
+	Tags              []map[string]interface{} `json:"tags"`
+	AdditionalInfo    map[string]interface{}   `json:"additional_info"`
+	CreatedAt         int64                    `json:"created_at"`
+	UpdatedAt         int64                    `json:"updated_at"`
+}

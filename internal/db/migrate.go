@@ -342,6 +342,36 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
             validated_at bigint not null
         )`,
 		`create index if not exists idx_spam_result_target_id on spam_result(target_id)`,
+		// Places (generic site registry)
+		`create table if not exists places (
+            id text primary key default gen_random_uuid()::text,
+            name text not null,
+            address text not null default '',
+            address_description text default '',
+            coordinates jsonb not null,
+            type text not null,
+            sub_type text default '',
+            info_sources text[],
+            verified_at bigint,
+            website_url text,
+            status text not null,
+            resources jsonb,
+            open_date text default '',
+            end_date text default '',
+            open_time text default '',
+            end_time text default '',
+            contact_name text not null,
+            contact_phone text not null,
+            notes text default '',
+            tags jsonb default '[]'::jsonb,
+            additional_info jsonb,
+            created_at timestamptz not null default now(),
+            updated_at timestamptz not null default now(),
+            constraint chk_places_status check (status in ('開放','暫停','關閉')),
+            constraint chk_places_type check (type in ('醫療','加水','廁所','洗澡','避難','住宿','物資','心理援助'))
+        )`,
+		`create index if not exists idx_places_status on places(status)`,
+		`create index if not exists idx_places_type on places(type)`,
 		// Supply item providers
 		`create table if not exists supply_providers (
             id text primary key,
