@@ -337,3 +337,18 @@ type Place struct {
 	CreatedAt         int64                    `json:"created_at"`
 	UpdatedAt         int64                    `json:"updated_at"`
 }
+
+// RequirementsHR represents requirements_hr table row
+type RequirementsHR struct {
+	ID            string                   `json:"id"`
+	PlaceID       string                   `json:"place_id"`
+	RequiredType  string                   `json:"required_type"`
+	Name          string                   `json:"name"`
+	Unit          string                   `json:"unit"`
+	RequireCount  int                      `json:"require_count"`
+	ReceivedCount int                      `json:"received_count"`
+	Tags          []map[string]interface{} `json:"tags"`
+	AdditionalInfo map[string]interface{}  `json:"additional_info"`
+	CreatedAt     int64                    `json:"created_at"`
+	UpdatedAt     int64                    `json:"updated_at"`
+}

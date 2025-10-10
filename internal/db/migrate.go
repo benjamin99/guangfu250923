@@ -372,6 +372,23 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
         )`,
 		`create index if not exists idx_places_status on places(status)`,
 		`create index if not exists idx_places_type on places(type)`,
+		// Requirements HR (human resource needs per place)
+		`create table if not exists requirements_hr (
+            id text primary key default gen_random_uuid()::text,
+            place_id text not null references places(id) on delete cascade,
+            required_type text not null,
+            name text not null,
+            unit text not null,
+            require_count int not null,
+            received_count int not null default 0,
+            tags jsonb,
+            additional_info jsonb,
+            created_at timestamptz not null default now(),
+            updated_at timestamptz not null default now(),
+            constraint chk_requirements_hr_required_type check (required_type in ('一般志工','專業技術','清潔整理','醫療照護','後勤支援','其他'))
+        )`,
+		`create index if not exists idx_requirements_hr_place_id on requirements_hr(place_id)`,
+		`create index if not exists idx_requirements_hr_required_type on requirements_hr(required_type)`,
 		// Supply item providers
 		`create table if not exists supply_providers (
             id text primary key,
