@@ -1272,6 +1272,84 @@ paths:
         '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequirementsHR' } } } }
         '400': { description: 輸入錯誤 }
         '404': { description: 找不到 }
+  /requirements_supplies:
+    get:
+      operationId: listRequirementsSupplies
+      summary: 取得場所物資需求清單 (分頁)
+      description: 分頁列出各場所的物資需求 (requirements_supplies)，可依 place_id 與 required_type 過濾。
+      parameters:
+        - in: query
+          name: place_id
+          schema: { type: string }
+          description: 指定隸屬的場所點 ID
+        - in: query
+          name: required_type
+          schema: { type: string }
+          description: 需求類型 (飲食/醫療用品/生活用品等)
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequirementsSuppliesCollection' } } } }
+    post:
+      operationId: createRequirementsSupplies
+      summary: 建立場所物資需求
+      description: 新增一筆隸屬於場所點的物資需求。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RequirementsSuppliesCreate' }
+      responses:
+        '201': { description: 建立成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequirementsSupplies' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 指定的場所點不存在 }
+  /requirements_supplies/{id}:
+    get:
+      operationId: getRequirementsSupplies
+      summary: 取得單一場所物資需求
+      description: 依 ID 取得物資需求詳細資訊。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequirementsSupplies' } } } }
+        '404': { description: 找不到 }
+    delete:
+      operationId: deleteRequirementsSupplies
+      summary: 刪除場所物資需求
+      description: 依 ID 刪除一筆物資需求資料。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: 刪除成功，無內容 }
+        '404': { description: 找不到 }
+    patch:
+      operationId: patchRequirementsSupplies
+      summary: 更新場所物資需求 (部分欄位)
+      description: 部分更新物資需求欄位；僅更新提供的欄位，並自動更新 updated_at。
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RequirementsSuppliesPatch' }
+      responses:
+        '200': { description: 更新成功, content: { application/json: { schema: { $ref: '#/components/schemas/RequirementsSupplies' } } } }
+        '400': { description: 輸入錯誤 }
+        '404': { description: 找不到 }
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -2769,6 +2847,51 @@ components:
             member:
               type: array
               items: { $ref: '#/components/schemas/RequirementsHR' }
+    RequirementsSupplies:
+      type: object
+      properties:
+        id: { type: string }
+        place_id: { type: string }
+        required_type: { type: string, description: 需求類型：飲食/醫療用品/生活用品等 }
+        name: { type: string }
+        unit: { type: string }
+        require_count: { type: integer }
+        received_count: { type: integer }
+        tags: { type: array, items: { type: object, additionalProperties: true } }
+        created_at: { type: integer, format: int64 }
+        updated_at: { type: integer, format: int64 }
+        additional_info: { type: object, additionalProperties: true }
+    RequirementsSuppliesCreate:
+      type: object
+      required: [place_id, required_type, name, unit, require_count]
+      properties:
+        place_id: { type: string }
+        required_type: { type: string, description: 需求類型：飲食/醫療用品/生活用品等 }
+        name: { type: string }
+        unit: { type: string }
+        require_count: { type: integer }
+        received_count: { type: integer, default: 0 }
+        tags: { type: array, items: { type: object, additionalProperties: true } }
+        additional_info: { type: object, additionalProperties: true }
+    RequirementsSuppliesPatch:
+      type: object
+      properties:
+        place_id: { type: string, nullable: true }
+        required_type: { type: string, nullable: true }
+        name: { type: string, nullable: true }
+        unit: { type: string, nullable: true }
+        require_count: { type: integer, nullable: true }
+        received_count: { type: integer, nullable: true }
+        tags: { type: array, items: { type: object, additionalProperties: true } }
+        additional_info: { type: object, additionalProperties: true }
+    RequirementsSuppliesCollection:
+      allOf:
+        - $ref: '#/components/schemas/CollectionBase'
+        - type: object
+          properties:
+            member:
+              type: array
+              items: { $ref: '#/components/schemas/RequirementsSupplies' }
     Report:
       type: object
       properties:

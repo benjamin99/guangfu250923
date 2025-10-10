@@ -37,3 +37,4 @@ func (h *Handler) DeleteSupplyItem(c *gin.Context)         { deleteByID(c, h, "s
 func (h *Handler) DeleteReport(c *gin.Context)             { deleteByID(c, h, "reports") }
 func (h *Handler) DeletePlace(c *gin.Context)              { deleteByID(c, h, "places") }
 func (h *Handler) DeleteRequirementsHR(c *gin.Context)     { deleteByID(c, h, "requirements_hr") }
+func (h *Handler) DeleteRequirementsSupplies(c *gin.Context) { deleteByID(c, h, "requirements_supplies") }

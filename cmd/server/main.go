@@ -222,6 +222,13 @@ func main() {
 	r.DELETE("/requirements_hr/:id", middleware.ModifyAPIKeyRequired(), h.DeleteRequirementsHR)
 	r.PATCH("/requirements_hr/:id", middleware.ModifyAPIKeyRequired(), h.PatchRequirementsHR)
 
+	// Requirements Supplies
+	r.POST("/requirements_supplies", h.CreateRequirementsSupplies)
+	r.GET("/requirements_supplies", h.ListRequirementsSupplies)
+	r.GET("/requirements_supplies/:id", h.GetRequirementsSupplies)
+	r.DELETE("/requirements_supplies/:id", middleware.ModifyAPIKeyRequired(), h.DeleteRequirementsSupplies)
+	r.PATCH("/requirements_supplies/:id", middleware.ModifyAPIKeyRequired(), h.PatchRequirementsSupplies)
+
 	// Turnstile test endpoint (POST only): echo JSON payload for frontend debugging
 	r.POST("/__test_turnstile", middleware.TurnstileVerifier(), func(c *gin.Context) {
 		var payload any
